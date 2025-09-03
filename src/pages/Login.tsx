@@ -1,33 +1,27 @@
 "use client";
 
-import type { InputProps } from "@heroui/react";
-
 import React from "react";
-import { Button, Input, Checkbox, Link, Divider, Form } from "@heroui/react";
+import { Button, Input, Checkbox, Link, Form, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
-export default function Login() {
+export default function Component() {
   const [isVisible, setIsVisible] = React.useState(false);
 
   const toggleVisibility = () => setIsVisible(!isVisible);
 
-  const inputClasses: InputProps["classNames"] = {
-    inputWrapper:
-      "border-transparent bg-default-50/40 dark:bg-default-50/20 group-data-[focus=true]:border-primary data-[hover=true]:border-foreground/20",
-  };
-
-  const buttonClasses = "w-full bg-foreground/10 dark:bg-foreground/20";
-
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     console.log("handleSubmit");
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-linear-to-br from-rose-400 via-fuchsia-500 to-indigo-500 p-2 sm:p-4 lg:p-8">
-      <div className="rounded-large bg-background/60 shadow-small dark:bg-default-100/50 flex w-full max-w-sm flex-col gap-4 px-8 pt-6 pb-10 backdrop-blur-md backdrop-saturate-150">
-        <p className="pb-2 text-xl font-medium">Log In</p>
+    <div className="flex h-screen w-full items-center justify-center">
+      <div className="rounded-large bg-content1 shadow-small flex w-full max-w-sm flex-col gap-4 px-8 pt-6 pb-10">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-large font-medium">Log in to your account</h1>
+          <p className="text-small text-default-500">to continue to Acme</p>
+        </div>
+
         <Form
           className="flex flex-col gap-3"
           validationBehavior="native"
@@ -35,26 +29,24 @@ export default function Login() {
         >
           <Input
             isRequired
-            classNames={inputClasses}
             label="Email Address"
             name="email"
-            placeholder="Enter your email"
+            placeholder="example@mail.com"
             type="email"
             variant="bordered"
           />
           <Input
             isRequired
-            classNames={inputClasses}
             endContent={
               <button type="button" onClick={toggleVisibility}>
                 {isVisible ? (
                   <Icon
-                    className="text-foreground/50 pointer-events-none text-2xl"
+                    className="text-default-400 text-2xl cursor-pointer"
                     icon="solar:eye-closed-linear"
                   />
                 ) : (
                   <Icon
-                    className="text-foreground/50 pointer-events-none text-2xl"
+                    className="text-default-400 text-2xl cursor-pointer"
                     icon="solar:eye-bold"
                   />
                 )}
@@ -62,25 +54,24 @@ export default function Login() {
             }
             label="Password"
             name="password"
-            placeholder="Enter your password"
+            placeholder="********"
             type={isVisible ? "text" : "password"}
             variant="bordered"
           />
           <div className="flex w-full items-center justify-between px-1 py-2">
-            <Checkbox
-              classNames={{
-                wrapper: "before:border-foreground/50",
-              }}
-              name="remember"
-              size="sm"
-            >
+            <Checkbox name="remember" size="sm">
               Remember me
             </Checkbox>
-            <Link className="text-foreground/50" href="#" size="sm">
+            <Link className="text-default-500" href="#" size="sm">
               Forgot password?
             </Link>
           </div>
-          <Button className={buttonClasses} type="submit">
+          <Button
+            className="w-full hover:bg-gradient-to-br hover:from-primary hover:to-secondary hover:text-white"
+            color="primary"
+            variant="shadow"
+            type="submit"
+          >
             Log In
           </Button>
         </Form>
@@ -91,21 +82,23 @@ export default function Login() {
         </div>
         <div className="flex flex-col gap-2">
           <Button
-            className={buttonClasses}
-            startContent={<Icon icon="fe:google" width={24} />}
+            startContent={<Icon icon="flat-color-icons:google" width={24} />}
+            variant="bordered"
           >
             Continue with Google
           </Button>
           <Button
-            className={buttonClasses}
-            startContent={<Icon icon="fe:github" width={24} />}
+            startContent={
+              <Icon className="text-default-500" icon="fe:github" width={24} />
+            }
+            variant="bordered"
           >
             Continue with Github
           </Button>
         </div>
-        <p className="text-small text-foreground/50 text-center">
+        <p className="text-small text-center">
           Need to create an account?&nbsp;
-          <Link color="foreground" href="#" size="sm">
+          <Link href="#" size="sm">
             Sign Up
           </Link>
         </p>
