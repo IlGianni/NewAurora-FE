@@ -1,19 +1,19 @@
-import Login from "./pages/Login";
+import AuthPage from "./pages/authentication/AuthPage";
 
-//import axios from "axios";
-import { useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { Route, Routes, Navigate } from "react-router-dom";
 
 function App() {
-  //axios.defaults.baseURL = import.meta.env.VITE_API_URL;
-  //axios.defaults.withCredentials = true;
+  axios.defaults.baseURL = import.meta.env.VITE_API_URL;
+  axios.defaults.withCredentials = true;
 
   const [isAuth, setIsAuth] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  /*const checkSession = async () => {
+  const checkSession = async () => {
     try {
-      const res = await axios.get("/Authentication/GET/CheckSession", {
+      const res = await axios.get("/authentication/GET/check-session", {
         withCredentials: true,
       });
 
@@ -47,11 +47,20 @@ function App() {
 
   if (isLoading) {
     return <div>Loading...</div>;
-  }*/
+  }
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      {!isAuth ? (
+        <>
+          <Route path="/" element={<AuthPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </>
+      ) : (
+        <>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </>
+      )}
     </Routes>
   );
 }
