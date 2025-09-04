@@ -113,6 +113,7 @@ export default function AuthPage() {
                 "Controlla la tua email per l'attivazione del tuo account",
               color: "success",
             });
+            location.href = "/dashboard";
           } else {
             addToast({
               timeout: 3000,
