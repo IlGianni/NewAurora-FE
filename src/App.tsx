@@ -1,4 +1,9 @@
 import AuthPage from "./pages/authentication/AuthPage";
+import Dashboard from "./pages/dashboard/Dashboard";
+import Settings from "./pages/settings/Settings";
+import Projects from "./pages/projects/Projects";
+import Tasks from "./pages/tasks/Tasks";
+import AppLayout from "./components/Layout/AppLayout";
 
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -58,7 +63,47 @@ function App() {
         </>
       ) : (
         <>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route
+            path="/"
+            element={
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <AppLayout>
+                <Settings />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/projects"
+            element={
+              <AppLayout>
+                <Projects />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/tasks"
+            element={
+              <AppLayout>
+                <Tasks />
+              </AppLayout>
+            }
+          />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>
       )}
     </Routes>
