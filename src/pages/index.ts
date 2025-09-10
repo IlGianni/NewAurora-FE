@@ -1,4 +1,9 @@
 export { default as Dashboard } from "./dashboard/Dashboard";
 export { default as Settings } from "./settings/Settings";
 export { default as Projects } from "./projects/Projects";
+export { default as ProjectDetail } from "./projects/ProjectDetail";
+export { default as ProjectTasks } from "./projects/ProjectTasks";
+export { default as ProjectTeam } from "./projects/ProjectTeam";
+export { default as ProjectDocuments } from "./projects/ProjectDocuments";
+export { default as ProjectSettings } from "./projects/ProjectSettings";
 export { default as Tasks } from "./tasks/Tasks";
