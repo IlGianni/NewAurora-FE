@@ -9,6 +9,7 @@ import AppLayout from "./components/Layout/AppLayout";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
+import ProjectCreator from "./pages/projects/ProjectCreator";
 
 function App() {
   axios.defaults.baseURL = import.meta.env.VITE_API_URL;
@@ -56,66 +57,27 @@ function App() {
   }
 
   return (
-    <Routes>
-      {!isAuth ? (
-        <>
-          <Route path="/" element={<AuthPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </>
-      ) : (
-        <>
-          <Route
-            path="/"
-            element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <AppLayout>
-                <Settings />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/projects"
-            element={
-              <AppLayout>
-                <Projects />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/projects/:id"
-            element={
-              <AppLayout>
-                <ProjectDetail />
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/tasks"
-            element={
-              <AppLayout>
-                <Tasks />
-              </AppLayout>
-            }
-          />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </>
-      )}
-    </Routes>
+    <AppLayout isAuth={isAuth}>
+      <Routes>
+        {!isAuth ? (
+          <>
+            <Route path="/" element={<AuthPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </>
+        ) : (
+          <>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/projects/:id" element={<ProjectDetail />} />
+            <Route path="/projects/create" element={<ProjectCreator />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </>
+        )}
+      </Routes>
+    </AppLayout>
   );
 }
 

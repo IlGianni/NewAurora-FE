@@ -1,8 +1,6 @@
-import {Chip} from "@heroui/react";
-import {Icon} from "@iconify/react";
+import { Icon } from "@iconify/react";
 
-import {type SidebarItem, SidebarItemType} from "./Sidebar";
-import TeamAvatar from "./TeamAvatar";
+import { type SidebarItem } from "./Sidebar";
 
 export const sectionItems: SidebarItem[] = [
   {
@@ -21,16 +19,11 @@ export const sectionItems: SidebarItem[] = [
         icon: "solar:widget-2-outline",
         title: "Progetti",
         endContent: (
-          <Icon className="text-default-400" icon="solar:add-circle-line-duotone" width={24} />
-        ),
-      },
-      {
-        key: "tasks",
-        href: "/tasks",
-        icon: "solar:checklist-minimalistic-outline",
-        title: "Task",
-        endContent: (
-          <Icon className="text-default-400" icon="solar:add-circle-line-duotone" width={24} />
+          <Icon
+            className="text-default-400"
+            icon="solar:add-circle-line-duotone"
+            width={24}
+          />
         ),
       },
       {

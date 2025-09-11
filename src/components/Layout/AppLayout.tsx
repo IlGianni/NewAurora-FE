@@ -1,16 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  Avatar,
-  Button,
-  Card,
-  CardBody,
-  CardFooter,
-  Input,
-  ScrollShadow,
-  Spacer,
-} from "@heroui/react";
+import { Avatar, Button, Input, ScrollShadow, Spacer } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -20,9 +11,10 @@ import { sectionItems } from "./sidebar-items";
 
 interface AppLayoutProps {
   children: React.ReactNode;
+  isAuth: boolean;
 }
 
-export default function AppLayout({ children }: AppLayoutProps) {
+export default function AppLayout({ children, isAuth }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,7 +26,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
     if (pathname === "/" || pathname === "/dashboard") return "dashboard";
     if (pathname === "/settings") return "settings";
     if (pathname === "/projects") return "projects";
-    if (pathname === "/tasks") return "tasks";
     if (pathname === "/team") return "team";
     if (pathname === "/calendar") return "calendar";
     if (pathname === "/clients") return "clients";
@@ -44,8 +35,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
     return "dashboard"; // fallback
   };
 
-  const handleSidebarSelect = (key: string) => {
-    navigate(key);
+  const handleSidebarSelect = (
+    key: string | React.SyntheticEvent<HTMLUListElement>
+  ) => {
+    const route =
+      typeof key === "string"
+        ? key
+        : (key.target as HTMLElement).getAttribute("data-key") || "";
+    navigate(route);
   };
 
   const handleLogout = () => {
@@ -54,9 +51,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
   };
 
   return (
-    <div className="h-full min-h-screen flex">
+    <div className="h-screen min-h-screen flex">
       {/* Sidebar */}
-      <div className="border-r-small border-divider relative flex h-full w-72 flex-col p-6">
+      <div
+        className="border-r-small border-divider relative flex h-full w-72 flex-col p-6 bg-default-50"
+        hidden={!isAuth}
+      >
         <div className="flex items-center gap-2 px-2">
           <div className="bg-foreground flex h-8 w-8 items-center justify-center rounded-full">
             <ProjectManagerIcon className="text-background" />
@@ -103,30 +103,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
             items={sectionItems}
             onSelect={handleSidebarSelect}
           />
-          <Card className="mx-2 overflow-visible" shadow="sm">
-            <CardBody className="items-center py-5 text-center">
-              <h3 className="text-medium text-default-700 font-medium">
-                Upgrade to Pro
-                <span aria-label="rocket-emoji" className="ml-2" role="img">
-                  🚀
-                </span>
-              </h3>
-              <p className="text-small text-default-500 p-4">
-                Ottieni 1 mese gratuito e sblocca tutte le funzionalità del
-                piano pro.
-              </p>
-            </CardBody>
-            <CardFooter className="absolute -bottom-8 justify-center">
-              <Button
-                className="px-10 shadow-md"
-                color="primary"
-                radius="full"
-                variant="shadow"
-              >
-                Upgrade
-              </Button>
-            </CardFooter>
-          </Card>
         </ScrollShadow>
 
         <Spacer y={8} />
@@ -164,8 +140,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-6">{children}</main>
+      <div className="flex-1 flex flex-col h-full overflow-y-scroll">
+        <main className={isAuth ? "flex-1 p-6" : "flex-1 bg-background"}>
+          {children}
+        </main>
       </div>
     </div>
   );
