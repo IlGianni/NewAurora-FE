@@ -102,10 +102,20 @@ export default function Projects() {
       trendChipVariant: "flat",
     },
     {
+      title: "Task Rimanenti",
+      value: 12,
+      icon: "solar:clipboard-list-bold",
+      iconColor: "text-warning",
+      changeType: "neutral",
+      trendChipPosition: "bottom",
+      trendType: "neutral",
+      trendChipVariant: "flat",
+    },
+    {
       title: "Team Members",
       value: 8,
       icon: "solar:users-group-rounded-bold",
-      iconColor: "text-warning",
+      iconColor: "text-danger",
       changeType: "negative",
       trendChipPosition: "top",
       trendType: "down",
@@ -142,7 +152,7 @@ export default function Projects() {
 
   // Componente skeleton per le statistiche
   const StatisticSkeleton = () => (
-    <Card className="shadow-none border border-gray-200">
+    <Card className="shadow-none border border-primary/20">
       <div className="flex p-4">
         <div className="flex items-center gap-3 w-full">
           <Skeleton className="flex rounded-lg w-10 h-10" />
@@ -157,7 +167,7 @@ export default function Projects() {
 
   // Componente skeleton per le card dei progetti
   const ProjectCardSkeleton = () => (
-    <Card className="shadow-none border border-gray-200">
+    <Card className="shadow-none border border-primary/20">
       <CardBody className="p-6">
         {/* Header con titolo e status */}
         <div className="flex items-start justify-between mb-4">
@@ -222,7 +232,10 @@ export default function Projects() {
             ))
           : // Mostra dati reali quando caricati
             statistics.map((statistic, index) => (
-              <Card key={index} className="shadow-none border border-gray-200">
+              <Card
+                key={index}
+                className="shadow-none border border-primary/20"
+              >
                 <div className="flex p-4">
                   <div className="flex items-center gap-3 w-full">
                     <div className="p-2 bg-default-100 rounded-lg">
@@ -280,7 +293,7 @@ export default function Projects() {
                 <Card
                   isPressable
                   key={project.id}
-                  className="shadow-none border border-gray-200 hover:shadow-lg hover:border-primary/30 hover:scale-[1.02] transition-all duration-300 cursor-pointer group"
+                  className="shadow-none border border-primary/20 hover:shadow-lg hover:border-primary/30 hover:scale-[1.02] transition-all duration-300 cursor-pointer group"
                   onClick={() => handleProjectClick(project.id)}
                 >
                   <CardBody className="p-6">
