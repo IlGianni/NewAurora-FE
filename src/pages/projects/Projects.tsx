@@ -86,6 +86,22 @@ export default function Projects() {
     </Card>
   );
 
+  const deleteProject = async (project_id: number) => {
+    try {
+      setIsLoadingProjects(true);
+      const response = await axios.delete(`/project/DELETE/delete-project`, {
+        data: { project_id: project_id },
+      });
+
+      if (response.status === 200) {
+        fetchProjects();
+      }
+    } catch (error) {
+      console.error("Errore nell'eliminazione del progetto:", error);
+      setIsLoadingProjects(false);
+    }
+  };
+
   // Componente skeleton per le card dei progetti
   const ProjectCardSkeleton = () => (
     <Card className="shadow-none border border-primary/20">
@@ -212,7 +228,11 @@ export default function Projects() {
               ))
             : // Mostra progetti reali quando caricati
               projects.map((project) => (
-                <ProjectCard key={project.project_id} project={project} />
+                <ProjectCard
+                  key={project.project_id}
+                  project={project}
+                  deleteProject={deleteProject}
+                />
               ))}
         </div>
       </div>

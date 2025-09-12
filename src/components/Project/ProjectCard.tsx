@@ -16,7 +16,13 @@ import type { Project, ProjectStatus } from "../../types";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
-export default function ProjectCard({ project }: { project: Project }) {
+export default function ProjectCard({
+  project,
+  deleteProject,
+}: {
+  project: Project;
+  deleteProject: (project_id: number) => void;
+}) {
   const navigate = useNavigate();
   const [projectStatuses, setProjectStatuses] = useState<ProjectStatus[]>([]);
 
@@ -41,8 +47,6 @@ export default function ProjectCard({ project }: { project: Project }) {
     const status = projectStatuses.find((status) => status.name === statusName);
     return status?.color || "default";
   };
-
-  console.log(project.project_status);
 
   return (
     <Card
@@ -75,12 +79,14 @@ export default function ProjectCard({ project }: { project: Project }) {
 
             {/* Dropdown per modifiche rapide */}
             <Dropdown showArrow>
-              <DropdownTrigger
-                size="sm"
-                variant="light"
-                onClick={(e: any) => e.stopPropagation()}
-              >
-                <Icon icon="solar:settings-outline" />
+              <DropdownTrigger>
+                <Button
+                  variant="light"
+                  size="sm"
+                  onPress={(e: any) => e.stopPropagation()}
+                >
+                  <Icon icon="solar:settings-outline" />
+                </Button>
               </DropdownTrigger>
               <DropdownMenu
                 aria-label="Modifica rapida progetto"
@@ -112,9 +118,7 @@ export default function ProjectCard({ project }: { project: Project }) {
                   color="danger"
                   key="edit"
                   startContent={<Icon icon="fluent:delete-12-regular" />}
-                  onClick={() =>
-                    navigate(`/projects/${project.unique_id}/edit`)
-                  }
+                  onClick={() => deleteProject(project.project_id)}
                 >
                   Elimina Progetto
                 </DropdownItem>

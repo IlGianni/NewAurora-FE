@@ -32,7 +32,7 @@ export interface ProjectMember {
 
 // Interfaccia principale per il progetto
 export interface Project {
-  project_id: string;
+  project_id: number;
   unique_id: string;
   name: string;
   description: string;
