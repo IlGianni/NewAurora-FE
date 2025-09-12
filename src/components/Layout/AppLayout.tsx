@@ -51,10 +51,10 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
   };
 
   return (
-    <div className="h-screen min-h-screen flex">
+    <div className="h-screen flex py-4 pl-4">
       {/* Sidebar */}
       <div
-        className="border-r-small border-divider relative flex h-full w-72 flex-col p-6 bg-default-50"
+        className="border-r-small border border-primary/20 relative flex h-full w-72 flex-col p-6 bg-default-50 rounded-2xl overflow-hidden"
         hidden={!isAuth}
       >
         <div className="flex items-center gap-2 px-2">
