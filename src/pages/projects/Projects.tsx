@@ -151,14 +151,16 @@ export default function Projects() {
             Gestisci e monitora tutti i tuoi progetti
           </p>
         </div>
-        <Button
-          color="primary"
-          size="sm"
-          startContent={<Icon icon="mdi:folder-add" />}
-          onPress={() => navigate("/projects/create")}
-        >
-          Nuovo Progetto
-        </Button>
+        {projects.length > 0 && (
+          <Button
+            color="primary"
+            size="sm"
+            startContent={<Icon icon="mdi:folder-add" />}
+            onPress={() => navigate("/projects/create")}
+          >
+            Nuovo Progetto
+          </Button>
+        )}
       </div>
 
       {/* Statistiche */}
@@ -221,19 +223,48 @@ export default function Projects() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {isLoadingProjects
-            ? // Mostra skeleton durante il caricamento
-              Array.from({ length: 6 }).map((_, index) => (
-                <ProjectCardSkeleton key={index} />
-              ))
-            : // Mostra progetti reali quando caricati
-              projects.map((project) => (
-                <ProjectCard
-                  key={project.project_id}
-                  project={project}
-                  deleteProject={deleteProject}
-                />
-              ))}
+          {isLoadingProjects ? (
+            // Mostra skeleton durante il caricamento
+            Array.from({ length: 6 }).map((_, index) => (
+              <ProjectCardSkeleton key={index} />
+            ))
+          ) : projects.length > 0 ? (
+            // Mostra progetti reali quando caricati
+            projects.map((project) => (
+              <ProjectCard
+                key={project.project_id}
+                project={project}
+                deleteProject={deleteProject}
+              />
+            ))
+          ) : (
+            // Empty state quando non ci sono progetti
+            <div className="col-span-full flex flex-col items-center justify-center py-16 px-4">
+              <div className="text-center max-w-md">
+                <div className="mb-6">
+                  <Icon
+                    icon="solar:folder-open-outline"
+                    className="text-6xl text-default-300 mx-auto"
+                  />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">
+                  Nessun progetto trovato
+                </h3>
+                <p className="text-default-500 mb-6">
+                  Inizia creando il tuo primo progetto per organizzare e gestire
+                  i tuoi lavori.
+                </p>
+                <Button
+                  color="primary"
+                  size="md"
+                  startContent={<Icon icon="mdi:folder-add" />}
+                  onPress={() => navigate("/projects/create")}
+                >
+                  Crea il tuo primo progetto
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

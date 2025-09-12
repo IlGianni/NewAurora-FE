@@ -152,7 +152,11 @@ export default function ProjectCard({
           </div>
 
           {/* Deadline */}
-          <div className="flex items-center gap-1 text-default-500">
+
+          <div
+            hidden={!project.end_date}
+            className="flex items-center gap-1 text-default-500"
+          >
             <Icon icon="solar:calendar-outline" className="text-sm" />
             <span className="text-xs">
               {project.end_date
