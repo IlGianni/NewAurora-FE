@@ -2,6 +2,7 @@
 export interface ProjectStatus {
   project_status_id: string;
   name: string;
+  color: string;
   created_at: string;
   updated_at: string;
 }

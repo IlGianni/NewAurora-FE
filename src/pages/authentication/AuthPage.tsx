@@ -144,7 +144,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="flex h-screen w-full items-center justify-center">
       <div className="relative overflow-hidden rounded-large bg-content1 shadow-large flex w-full max-w-md flex-col gap-4 px-8 pt-6 pb-10">
         {/* Container per l'animazione */}
         <div className="relative overflow-hidden">
@@ -212,7 +212,7 @@ export default function AuthPage() {
                 </Link>
               </div>
               <Button
-                className="w-full hover:bg-gradient-to-br hover:from-primary hover:to-secondary hover:text-white"
+                className="w-full"
                 color="primary"
                 variant="shadow"
                 type="submit"
@@ -371,7 +371,7 @@ export default function AuthPage() {
                 </Link>
               </Checkbox>
               <Button
-                className={`w-full hover:bg-gradient-to-br hover:from-primary hover:to-secondary hover:text-white transition-all duration-500 ease-in-out ${
+                className={`w-full transition-all duration-500 ease-in-out ${
                   isLoginMode
                     ? "translate-x-full opacity-0"
                     : "translate-x-0 opacity-100"

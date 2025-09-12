@@ -24,8 +24,8 @@ export default function Projects() {
 
     if (response.status === 200) {
       setIsLoadingProjects(false);
+      setIsLoadingStats(false);
     }
-    console.log(projects);
   };
 
   const statistics = [
@@ -212,7 +212,7 @@ export default function Projects() {
               ))
             : // Mostra progetti reali quando caricati
               projects.map((project) => (
-                <ProjectCard key={project.id} {...project} />
+                <ProjectCard key={project.project_id} project={project} />
               ))}
         </div>
       </div>

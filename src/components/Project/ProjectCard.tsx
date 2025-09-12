@@ -12,45 +12,44 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useNavigate } from "react-router-dom";
-import type { Project } from "../../types";
+import type { Project, ProjectStatus } from "../../types";
+import axios from "axios";
+import { useEffect, useState } from "react";
 
-interface ProjectCardProps {
-  project: Project;
-}
-
-export default function ProjectCard({ project }: ProjectCardProps) {
+export default function ProjectCard({ project }: { project: Project }) {
   const navigate = useNavigate();
+  const [projectStatuses, setProjectStatuses] = useState<ProjectStatus[]>([]);
 
-  const handleProjectClick = (projectId: number) => {
+  const handleProjectClick = () => {
     // Prova prima con navigate
     try {
-      navigate(`/projects/${projectId}`);
+      navigate(`/projects/${project.unique_id}`);
     } catch (error) {
       console.error("Navigation error:", error);
       // Fallback con window.location
-      window.location.href = `/projects/${projectId}`;
+      window.location.href = `/projects/${project.unique_id}`;
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Completed":
-        return "success";
-      case "In Progress":
-        return "primary";
-      case "Planning":
-        return "warning";
-      default:
-        return "default";
-    }
+  useEffect(() => {
+    axios.get(`/project/GET/get-project-statuses`).then((res) => {
+      setProjectStatuses(res.data.project_statuses);
+    });
+  }, []);
+
+  const getStatusColor = (statusName: string) => {
+    const status = projectStatuses.find((status) => status.name === statusName);
+    return status?.color || "default";
   };
+
+  console.log(project.project_status);
 
   return (
     <Card
       isPressable
       key={project.project_id}
       className="shadow-none border border-primary/20 hover:shadow-lg hover:border-primary/30  transition-all duration-300 cursor-pointer group"
-      onClick={() => handleProjectClick(parseInt(project.project_id))}
+      onClick={() => handleProjectClick()}
     >
       <CardBody className="p-6">
         {/* Header con titolo e status */}
@@ -76,15 +75,12 @@ export default function ProjectCard({ project }: ProjectCardProps) {
 
             {/* Dropdown per modifiche rapide */}
             <Dropdown showArrow>
-              <DropdownTrigger>
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Icon icon="solar:settings-outline" />
-                </Button>
+              <DropdownTrigger
+                size="sm"
+                variant="light"
+                onClick={(e: any) => e.stopPropagation()}
+              >
+                <Icon icon="solar:settings-outline" />
               </DropdownTrigger>
               <DropdownMenu
                 aria-label="Modifica rapida progetto"
@@ -93,10 +89,9 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 <DropdownItem
                   key="edit"
                   startContent={<Icon icon="solar:pen-outline" />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/projects/${project.project_id}/edit`);
-                  }}
+                  onClick={() =>
+                    navigate(`/projects/${project.unique_id}/edit`)
+                  }
                 >
                   Modifica Progetto
                 </DropdownItem>
@@ -117,10 +112,9 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                   color="danger"
                   key="edit"
                   startContent={<Icon icon="fluent:delete-12-regular" />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/projects/${project.project_id}/edit`);
-                  }}
+                  onClick={() =>
+                    navigate(`/projects/${project.unique_id}/edit`)
+                  }
                 >
                   Elimina Progetto
                 </DropdownItem>
