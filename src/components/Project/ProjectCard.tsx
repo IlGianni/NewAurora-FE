@@ -79,13 +79,15 @@ export default function ProjectCard({
 
             {/* Dropdown per modifiche rapide */}
             <Dropdown showArrow>
-              <DropdownTrigger
-                className="w-6 h-6"
-                variant="light"
-                size="sm"
-                onPress={(e: any) => e.stopPropagation()}
-              >
-                <Icon icon="solar:settings-outline" className="w-5 h-5" />
+              <DropdownTrigger>
+                <Button
+                  variant="light"
+                  size="sm"
+                  onPress={(e: any) => e.stopPropagation()}
+                  isIconOnly
+                >
+                  <Icon icon="solar:settings-outline" className="w-5 h-5" />
+                </Button>
               </DropdownTrigger>
               <DropdownMenu
                 aria-label="Modifica rapida progetto"

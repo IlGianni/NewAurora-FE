@@ -46,3 +46,11 @@ export interface Project {
   created_by: User;
   project_members: ProjectMember[];
 }
+
+export interface AlertData {
+  title: string;
+  description: string;
+  type: "success" | "error" | "warning" | "info";
+  isOpen: boolean;
+  onClose: () => void;
+}

@@ -5,6 +5,8 @@ import ProjectCard from "../../components/Project/ProjectCard";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import type { Project } from "../../types";
+import AlertComponent from "../../components/Layout/AlertComponent";
+import type { AlertData } from "../../types";
 
 export default function Projects() {
   const navigate = useNavigate();
@@ -12,6 +14,13 @@ export default function Projects() {
   // Stati di loading
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [alertData, setAlertData] = useState<AlertData>({
+    title: "",
+    description: "",
+    type: "info",
+    isOpen: false,
+    onClose: () => {},
+  });
 
   // Simula il caricamento dei dati
   useEffect(() => {
@@ -94,9 +103,24 @@ export default function Projects() {
       });
 
       if (response.status === 200) {
+        setAlertData({
+          title: "Progetto eliminato con successo",
+          description: "Il progetto è stato eliminato con successo",
+          type: "success",
+          isOpen: true,
+          onClose: () => {},
+        });
         fetchProjects();
       }
     } catch (error) {
+      setAlertData({
+        title: "Errore nell'eliminazione del progetto",
+        description:
+          "Si è verificato un errore durante l'eliminazione del progetto",
+        type: "error",
+        isOpen: true,
+        onClose: () => {},
+      });
       console.error("Errore nell'eliminazione del progetto:", error);
       setIsLoadingProjects(false);
     }
@@ -143,6 +167,21 @@ export default function Projects() {
 
   return (
     <div className="space-y-8 ">
+      <AlertComponent
+        title={alertData.title}
+        description={alertData.description}
+        type={alertData.type}
+        isOpen={alertData.isOpen}
+        onClose={() =>
+          setAlertData({
+            title: "",
+            description: "",
+            type: "info",
+            isOpen: false,
+            onClose: () => {},
+          })
+        }
+      />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

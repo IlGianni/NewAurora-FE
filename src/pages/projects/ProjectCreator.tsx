@@ -17,7 +17,9 @@ import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { type DateValue } from "@internationalized/date";
-import { I18nProvider, useDateFormatter } from "@react-aria/i18n";
+import { I18nProvider } from "@react-aria/i18n";
+import type { AlertData } from "../../types";
+import AlertComponent from "../../components/Layout/AlertComponent";
 
 interface ProjectFormData {
   name: string;
@@ -55,8 +57,6 @@ export default function ProjectCreator() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Formatter per le date
-  const dateFormatter = useDateFormatter({ dateStyle: "full" });
   const [formData, setFormData] = useState<ProjectFormData>({
     name: "",
     description: "",
@@ -64,6 +64,13 @@ export default function ProjectCreator() {
     endDate: null,
     projectStatus: "",
     teamMembers: [],
+  });
+  const [alertData, setAlertData] = useState<AlertData>({
+    title: "",
+    description: "",
+    type: "info",
+    isOpen: false,
+    onClose: () => {},
   });
 
   // Mock data per gli stati del progetto
@@ -209,8 +216,25 @@ export default function ProjectCreator() {
       });
 
       if (res.status === 200) {
-        navigate("/projects");
+        setAlertData({
+          title: "Progetto creato con successo",
+          description: "Il progetto è stato creato con successo",
+          type: "success",
+          isOpen: true,
+          onClose: () => {},
+        });
+        setTimeout(() => {
+          navigate("/projects");
+        }, 5000);
       } else {
+        setAlertData({
+          title: "Errore durante la creazione del progetto",
+          description:
+            "Si è verificato un errore durante la creazione del progetto",
+          type: "error",
+          isOpen: true,
+          onClose: () => {},
+        });
         throw new Error("Errore durante la creazione del progetto");
       }
 
@@ -242,6 +266,21 @@ export default function ProjectCreator() {
 
   return (
     <div className="space-y-6">
+      <AlertComponent
+        title={alertData.title}
+        description={alertData.description}
+        type={alertData.type}
+        isOpen={alertData.isOpen}
+        onClose={() =>
+          setAlertData({
+            title: "",
+            description: "",
+            type: "info",
+            isOpen: false,
+            onClose: () => {},
+          })
+        }
+      />
       {/* Header */}
       <div className="flex items-center gap-3">
         <div>
