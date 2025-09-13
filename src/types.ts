@@ -1,6 +1,6 @@
 // Interfaccia per lo stato del progetto
 export interface ProjectStatus {
-  project_status_id: string;
+  project_status_id: number;
   name: string;
   color: string;
   created_at: string;
@@ -9,7 +9,7 @@ export interface ProjectStatus {
 
 // Interfaccia per l'utente creatore
 export interface User {
-  user_id: string;
+  user_id: number;
   name: string;
   surname: string;
   email: string;
@@ -20,9 +20,9 @@ export interface User {
 
 // Interfaccia per i membri del progetto
 export interface ProjectMember {
-  project_member_id?: string;
-  project_id?: string;
-  user_id: string;
+  project_member_id?: number;
+  project_id?: number;
+  user_id: number;
   user?: User;
   role?: string;
   joined_at?: string;
@@ -38,8 +38,8 @@ export interface Project {
   description: string;
   start_date: string | null;
   end_date: string | null;
-  project_status_id: string;
-  created_by_id: string;
+  project_status_id: number;
+  created_by_id: number;
   created_at: string;
   updated_at: string;
   project_status: ProjectStatus;

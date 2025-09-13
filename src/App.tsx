@@ -12,7 +12,9 @@ import { Route, Routes, Navigate } from "react-router-dom";
 import ProjectCreator from "./pages/projects/ProjectCreator";
 
 function App() {
-  axios.defaults.baseURL = import.meta.env.VITE_API_URL;
+  // Set the base URL for API calls
+  axios.defaults.baseURL =
+    import.meta.env.VITE_API_URL || "http://localhost:3000/API/v1";
   axios.defaults.withCredentials = true;
 
   const [isAuth, setIsAuth] = useState<boolean>(false);
