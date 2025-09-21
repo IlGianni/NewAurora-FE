@@ -1,53 +1,21 @@
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardBody,
-  Button,
-  Skeleton,
-  Input,
-  Select,
-  SelectItem,
-  Chip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  DatePicker,
-} from "@heroui/react";
-import { parseDate } from "@internationalized/date";
+import { Card, CardBody, Button, Skeleton, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import ProjectCard from "../../components/Project/ProjectCard";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import type { Project, ProjectStatus } from "../../types";
+import type { Project } from "../../types";
 import AlertComponent from "../../components/Layout/AlertComponent";
 import type { AlertData } from "../../types";
 
 export default function Projects() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [projectStatuses, setProjectStatuses] = useState<ProjectStatus[]>([]);
-
-  // Filter states
-  const [filters, setFilters] = useState({
-    status: "",
-    startDate: null as Date | null,
-    endDate: null as Date | null,
-    teamMember: "",
-  });
-
-  // Sort states
-  const [sortBy, setSortBy] = useState("created_at");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // UI states
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
-  const [isLoadingStatuses, setIsLoadingStatuses] = useState(true);
   const [alertData, setAlertData] = useState<AlertData>({
     title: "",
     description: "",
@@ -58,93 +26,20 @@ export default function Projects() {
 
   // Carica i dati iniziali
   useEffect(() => {
-    fetchProjectStatuses();
+    fetchProjects();
   }, []);
 
   // Filtra i progetti chiamando il backend
   useEffect(() => {
-    const filterParams: Record<string, any> = {
-      ...filters,
-      search: searchTerm.trim() || undefined,
-    };
+    fetchProjects(searchTerm.trim() || undefined);
+  }, [searchTerm]);
 
-    // Remove empty values
-    Object.keys(filterParams).forEach((key) => {
-      if (
-        filterParams[key] === "" ||
-        filterParams[key] === null ||
-        filterParams[key] === undefined
-      ) {
-        delete filterParams[key];
-      }
-    });
-
-    fetchProjects(filterParams);
-  }, [searchTerm, filters]);
-
-  // Ordina i progetti quando cambia l'ordinamento
-  useEffect(() => {
-    if (projects.length > 0) {
-      const sortedProjects = [...projects].sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
-
-        switch (sortBy) {
-          case "created_at":
-            aValue = new Date(a.created_at).getTime();
-            bValue = new Date(b.created_at).getTime();
-            break;
-          case "start_date":
-            aValue = a.start_date ? new Date(a.start_date).getTime() : 0;
-            bValue = b.start_date ? new Date(b.start_date).getTime() : 0;
-            break;
-          case "end_date":
-            aValue = a.end_date ? new Date(a.end_date).getTime() : 0;
-            bValue = b.end_date ? new Date(b.end_date).getTime() : 0;
-            break;
-          default:
-            aValue = new Date(a.created_at).getTime();
-            bValue = new Date(b.created_at).getTime();
-        }
-
-        if (sortOrder === "asc") {
-          return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
-        } else {
-          return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
-        }
-      });
-
-      setFilteredProjects(sortedProjects);
-    }
-  }, [projects, sortBy, sortOrder]);
-
-  const fetchProjects = async (filterParams: Record<string, any> = {}) => {
+  const fetchProjects = async (searchTerm?: string) => {
     try {
-      // Build query string from filter parameters
       const queryParams = new URLSearchParams();
-
-      if (filterParams.status)
-        queryParams.append("status", filterParams.status);
-      if (filterParams.startDate) {
-        // Convert Date object to ISO string for backend
-        const startDate =
-          filterParams.startDate instanceof Date
-            ? filterParams.startDate.toISOString().split("T")[0]
-            : filterParams.startDate;
-        queryParams.append("startDate", startDate);
+      if (searchTerm) {
+        queryParams.append("search", searchTerm);
       }
-      if (filterParams.endDate) {
-        // Convert Date object to ISO string for backend
-        const endDate =
-          filterParams.endDate instanceof Date
-            ? filterParams.endDate.toISOString().split("T")[0]
-            : filterParams.endDate;
-        queryParams.append("endDate", endDate);
-      }
-      if (filterParams.teamMember)
-        queryParams.append("teamMember", filterParams.teamMember);
-      if (filterParams.search)
-        queryParams.append("search", filterParams.search);
 
       const queryString = queryParams.toString();
       const url = queryString
@@ -153,7 +48,6 @@ export default function Projects() {
 
       const response = await axios.get(url);
       setProjects(response.data.projects);
-      setFilteredProjects(response.data.projects);
 
       if (response.status === 200) {
         setIsLoadingProjects(false);
@@ -163,91 +57,6 @@ export default function Projects() {
       console.error("Errore nel caricamento dei progetti:", error);
       setIsLoadingProjects(false);
       setIsLoadingStats(false);
-    }
-  };
-
-  const fetchProjectStatuses = async () => {
-    try {
-      const response = await axios.get("/project/GET/get-project-statuses");
-      setProjectStatuses(response.data.project_statuses);
-      setIsLoadingStatuses(false);
-    } catch (error) {
-      console.error("Errore nel caricamento degli status:", error);
-      setIsLoadingStatuses(false);
-    }
-  };
-
-  // Filter management functions
-  const updateFilter = (key: string, value: any) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      status: "",
-      startDate: null,
-      endDate: null,
-      teamMember: "",
-    });
-  };
-
-  // Sort management functions
-  const handleSortChange = (newSortBy: string) => {
-    if (sortBy === newSortBy) {
-      // Se è già selezionato, cambia l'ordine
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      // Se è nuovo, imposta come nuovo criterio con ordine desc
-      setSortBy(newSortBy);
-      setSortOrder("desc");
-    }
-  };
-
-  const getSortIcon = (field: string) => {
-    if (sortBy !== field) return "solar:sort-outline";
-    return sortOrder === "asc"
-      ? "solar:sort-by-alphabet-outline"
-      : "solar:sort-by-alphabet-2-outline";
-  };
-
-  const getActiveFiltersCount = () => {
-    let count = 0;
-    if (filters.status !== "") count++;
-    if (filters.startDate) count++;
-    if (filters.endDate) count++;
-    if (filters.teamMember !== "") count++;
-    return count;
-  };
-
-  const getUniqueTeamMembers = () => {
-    const members = new Set();
-    projects.forEach((project) => {
-      project.project_members.forEach((member) => {
-        if (member.user) {
-          members.add(
-            JSON.stringify({
-              user_id: member.user_id,
-              name: member.user.name,
-              surname: member.user.surname,
-            })
-          );
-        }
-      });
-    });
-    return Array.from(members).map((member) => JSON.parse(member as string));
-  };
-
-  // Helper function to safely format dates
-  const formatDate = (date: any) => {
-    if (!date) return "";
-    try {
-      return new Date(date).toLocaleDateString();
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return "Invalid Date";
     }
   };
 
@@ -454,84 +263,9 @@ export default function Projects() {
       {/* Lista Progetti */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h2 className="text-lg font-semibold text-foreground w-3/5">
+          <h2 className="text-lg font-semibold text-foreground">
             I tuoi progetti
           </h2>
-          <div className="flex gap-2 w-2/5 justify-end">
-            <Button
-              variant="bordered"
-              startContent={<Icon icon="solar:filter-outline" />}
-              onPress={() => setIsFilterModalOpen(true)}
-              className={getActiveFiltersCount() > 0 ? "border-primary" : ""}
-            >
-              Filtra
-              {getActiveFiltersCount() > 0 && (
-                <Chip size="sm" color="primary" className="ml-2">
-                  {getActiveFiltersCount()}
-                </Chip>
-              )}
-            </Button>
-
-            <Select
-              placeholder={sortBy ? undefined : "Ordina per"}
-              selectedKeys={sortBy ? [sortBy] : []}
-              onSelectionChange={(keys) => {
-                const selectedKey = Array.from(keys)[0] as string;
-                if (selectedKey) handleSortChange(selectedKey);
-              }}
-              startContent={<Icon icon={getSortIcon(sortBy)} />}
-              className="w-1/2"
-              variant="bordered"
-              aria-label="Seleziona criterio di ordinamento"
-              renderValue={(items) => {
-                return items.map((item) => (
-                  <div key={item.key} className="flex items-center gap-2">
-                    <Icon
-                      icon={getSortIcon(item.key as string)}
-                      className="text-sm"
-                    />
-                    {item.key === "created_at" && "Data creazione"}
-                    {item.key === "start_date" && "Data inizio"}
-                    {item.key === "end_date" && "Data fine"}
-                  </div>
-                ));
-              }}
-            >
-              <SelectItem key="created_at" textValue="Data creazione">
-                <div className="flex items-center gap-2">
-                  <Icon icon="solar:calendar-outline" className="text-sm" />
-                  Data creazione
-                </div>
-              </SelectItem>
-              <SelectItem key="start_date" textValue="Data inizio">
-                <div className="flex items-center gap-2">
-                  <Icon icon="solar:calendar-add-outline" className="text-sm" />
-                  Data inizio
-                </div>
-              </SelectItem>
-              <SelectItem key="end_date" textValue="Data fine">
-                <div className="flex items-center gap-2">
-                  <Icon icon="mdi:arm-barrier-outline" className="text-sm" />
-                  Data fine
-                </div>
-              </SelectItem>
-            </Select>
-            <Button
-              variant="bordered"
-              isIconOnly
-              onPress={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-              className="min-w-0"
-            >
-              <Icon
-                icon={
-                  sortOrder === "asc"
-                    ? "uil:sort-amount-up"
-                    : "uil:sort-amount-down"
-                }
-                height={15}
-              />
-            </Button>
-          </div>
         </div>
 
         {/* Barra di ricerca */}
@@ -560,146 +294,12 @@ export default function Projects() {
             }
             className="max-w-md"
           />
-          {(searchTerm || getActiveFiltersCount() > 0) && (
+          {searchTerm && (
             <div className="flex items-center text-sm text-default-500">
-              {filteredProjects.length} di {projects.length} progetti
+              {projects.length} progetti trovati
             </div>
           )}
         </div>
-
-        {/* Active Filters and Sort Display */}
-        {(getActiveFiltersCount() > 0 ||
-          sortBy !== "created_at" ||
-          sortOrder !== "desc") && (
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-3 items-center">
-              {/* Sort Display */}
-              {(sortBy !== "created_at" || sortOrder !== "desc") && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-default-600">
-                    Ordinamento:
-                  </span>
-                  <Chip
-                    size="md"
-                    color="secondary"
-                    variant="flat"
-                    startContent={
-                      <Icon icon={getSortIcon(sortBy)} className="text-sm" />
-                    }
-                    className="font-medium"
-                  >
-                    {sortBy === "created_at" && "Data creazione"}
-                    {sortBy === "start_date" && "Data inizio"}
-                    {sortBy === "end_date" && "Data fine"} -{" "}
-                    {sortOrder === "asc" ? "Crescente" : "Decrescente"}
-                  </Chip>
-                </div>
-              )}
-
-              {/* Active Filters */}
-              {getActiveFiltersCount() > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-default-600">
-                    Filtri:
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {filters.status !== "" && (
-                      <Chip
-                        size="md"
-                        color="primary"
-                        variant="flat"
-                        onClose={() => updateFilter("status", "")}
-                        startContent={
-                          <Icon icon="solar:tag-outline" className="text-sm" />
-                        }
-                        className="font-medium"
-                      >
-                        Status:{" "}
-                        {
-                          projectStatuses.find(
-                            (s) =>
-                              s.project_status_id === parseInt(filters.status)
-                          )?.name
-                        }
-                      </Chip>
-                    )}
-                    {filters.startDate && (
-                      <Chip
-                        size="md"
-                        color="primary"
-                        variant="flat"
-                        onClose={() => updateFilter("startDate", null)}
-                        startContent={
-                          <Icon
-                            icon="solar:calendar-add-outline"
-                            className="text-sm"
-                          />
-                        }
-                        className="font-medium"
-                      >
-                        Da: {formatDate(filters.startDate)}
-                      </Chip>
-                    )}
-                    {filters.endDate && (
-                      <Chip
-                        size="md"
-                        color="primary"
-                        variant="flat"
-                        onClose={() => updateFilter("endDate", null)}
-                        startContent={
-                          <Icon
-                            icon="solar:calendar-check-outline"
-                            className="text-sm"
-                          />
-                        }
-                        className="font-medium"
-                      >
-                        A: {formatDate(filters.endDate)}
-                      </Chip>
-                    )}
-                    {filters.teamMember !== "" && (
-                      <Chip
-                        size="md"
-                        color="primary"
-                        variant="flat"
-                        onClose={() => updateFilter("teamMember", "")}
-                        startContent={
-                          <Icon icon="solar:user-outline" className="text-sm" />
-                        }
-                        className="font-medium"
-                      >
-                        Team:{" "}
-                        {
-                          getUniqueTeamMembers().find(
-                            (m) => m.user_id === parseInt(filters.teamMember)
-                          )?.name
-                        }
-                      </Chip>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Clear All Button */}
-              <Button
-                size="sm"
-                variant="light"
-                color="danger"
-                startContent={
-                  <Icon icon="solar:trash-bin-minimalistic-outline" />
-                }
-                onPress={() => {
-                  clearFilters();
-                  setSortBy("created_at");
-                  setSortOrder("desc");
-                }}
-                className="ml-auto"
-              >
-                Cancella tutti
-              </Button>
-            </div>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {isLoadingProjects ? (
@@ -707,9 +307,9 @@ export default function Projects() {
             Array.from({ length: 6 }).map((_, index) => (
               <ProjectCardSkeleton key={index} />
             ))
-          ) : filteredProjects.length > 0 ? (
-            // Mostra progetti filtrati quando caricati
-            filteredProjects.map((project) => (
+          ) : projects.length > 0 ? (
+            // Mostra progetti quando caricati
+            projects.map((project) => (
               <ProjectCard
                 key={project.project_id}
                 project={project}
@@ -773,370 +373,6 @@ export default function Projects() {
           ) : null}
         </div>
       </div>
-
-      {/* Filter Modal */}
-      <Modal
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
-        size="3xl"
-        scrollBehavior="inside"
-        classNames={{
-          base: "max-h-[90vh]",
-          body: "py-6",
-        }}
-      >
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Icon
-                  icon="solar:filter-outline"
-                  className="text-primary text-xl"
-                />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold">Filtra Progetti</h2>
-                <p className="text-sm text-default-500">
-                  Applica filtri per trovare i progetti che ti interessano
-                </p>
-              </div>
-            </div>
-          </ModalHeader>
-          <ModalBody className="space-y-8">
-            {/* Status Filter Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-default-200">
-                <Icon
-                  icon="solar:tag-outline"
-                  className="text-primary text-lg"
-                />
-                <h3 className="text-lg font-medium text-foreground">
-                  Status del Progetto
-                </h3>
-              </div>
-              <div className="space-y-3">
-                <Select
-                  placeholder="Seleziona uno status del progetto"
-                  selectedKeys={filters.status ? [filters.status] : []}
-                  onSelectionChange={(keys) => {
-                    const selectedKey = Array.from(keys)[0] as string;
-                    updateFilter("status", selectedKey || "");
-                  }}
-                  isLoading={isLoadingStatuses}
-                  isDisabled={isLoadingStatuses}
-                  startContent={
-                    <Icon
-                      icon="solar:tag-outline"
-                      className="text-default-400"
-                    />
-                  }
-                  classNames={{
-                    trigger: "h-12",
-                  }}
-                >
-                  {projectStatuses.map((status) => (
-                    <SelectItem key={status.project_status_id.toString()}>
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: status.color || "#6b7280" }}
-                        />
-                        <span className="font-medium">{status.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </Select>
-                {filters.status && (
-                  <div className="flex items-center gap-2 text-sm text-success">
-                    <Icon
-                      icon="solar:check-circle-outline"
-                      className="text-success"
-                    />
-                    <span>
-                      Status selezionato:{" "}
-                      {
-                        projectStatuses.find(
-                          (s) =>
-                            s.project_status_id === parseInt(filters.status)
-                        )?.name
-                      }
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Date Range Filters Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-default-200">
-                <Icon
-                  icon="solar:calendar-outline"
-                  className="text-primary text-lg"
-                />
-                <h3 className="text-lg font-medium text-foreground">
-                  Periodo del Progetto
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <Icon
-                      icon="solar:calendar-add-outline"
-                      className="text-default-500"
-                    />
-                    Data di Inizio
-                  </label>
-                  <DatePicker
-                    value={
-                      filters.startDate
-                        ? parseDate(
-                            filters.startDate.toISOString().split("T")[0]
-                          )
-                        : null
-                    }
-                    onChange={(date) =>
-                      updateFilter(
-                        "startDate",
-                        date ? new Date(date.toString()) : null
-                      )
-                    }
-                    className="w-full"
-                    classNames={{
-                      inputWrapper: "h-12",
-                    }}
-                  />
-                  {filters.startDate && (
-                    <div className="flex items-center gap-2 text-sm text-success">
-                      <Icon
-                        icon="solar:check-circle-outline"
-                        className="text-success"
-                      />
-                      <span>Da: {formatDate(filters.startDate)}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <Icon
-                      icon="solar:calendar-check-outline"
-                      className="text-default-500"
-                    />
-                    Data di Fine
-                  </label>
-                  <DatePicker
-                    value={
-                      filters.endDate
-                        ? parseDate(filters.endDate.toISOString().split("T")[0])
-                        : null
-                    }
-                    onChange={(date) =>
-                      updateFilter(
-                        "endDate",
-                        date ? new Date(date.toString()) : null
-                      )
-                    }
-                    className="w-full"
-                    classNames={{
-                      inputWrapper: "h-12",
-                    }}
-                  />
-                  {filters.endDate && (
-                    <div className="flex items-center gap-2 text-sm text-success">
-                      <Icon
-                        icon="solar:check-circle-outline"
-                        className="text-success"
-                      />
-                      <span>A: {formatDate(filters.endDate)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Team Member Filter Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-default-200">
-                <Icon
-                  icon="solar:user-outline"
-                  className="text-primary text-lg"
-                />
-                <h3 className="text-lg font-medium text-foreground">
-                  Membro del Team
-                </h3>
-              </div>
-              <div className="space-y-3">
-                <Select
-                  placeholder="Seleziona un membro del team"
-                  selectedKeys={filters.teamMember ? [filters.teamMember] : []}
-                  onSelectionChange={(keys) => {
-                    const selectedKey = Array.from(keys)[0] as string;
-                    updateFilter("teamMember", selectedKey || "");
-                  }}
-                  startContent={
-                    <Icon
-                      icon="solar:user-outline"
-                      className="text-default-400"
-                    />
-                  }
-                  classNames={{
-                    trigger: "h-12",
-                  }}
-                >
-                  {getUniqueTeamMembers().map((member) => (
-                    <SelectItem key={member.user_id.toString()}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                          <Icon
-                            icon="solar:user-outline"
-                            className="text-primary text-sm"
-                          />
-                        </div>
-                        <span className="font-medium">
-                          {member.name} {member.surname}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </Select>
-                {filters.teamMember !== "" && (
-                  <div className="flex items-center gap-2 text-sm text-success">
-                    <Icon
-                      icon="solar:check-circle-outline"
-                      className="text-success"
-                    />
-                    <span>
-                      Team selezionato:{" "}
-                      {
-                        getUniqueTeamMembers().find(
-                          (m) => m.user_id === parseInt(filters.teamMember)
-                        )?.name
-                      }
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Active Filters Summary */}
-            {getActiveFiltersCount() > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-2 border-b border-default-200">
-                  <Icon
-                    icon="solar:settings-outline"
-                    className="text-primary text-lg"
-                  />
-                  <h3 className="text-lg font-medium text-foreground">
-                    Filtri Attivi
-                  </h3>
-                </div>
-                <div className="p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/20">
-                  <div className="flex flex-wrap gap-3">
-                    {filters.status !== "" && (
-                      <Chip
-                        size="md"
-                        color="primary"
-                        variant="flat"
-                        startContent={
-                          <Icon icon="solar:tag-outline" className="text-xs" />
-                        }
-                        className="font-medium"
-                      >
-                        Status:{" "}
-                        {
-                          projectStatuses.find(
-                            (s) =>
-                              s.project_status_id === parseInt(filters.status)
-                          )?.name
-                        }
-                      </Chip>
-                    )}
-                    {filters.startDate && (
-                      <Chip
-                        size="md"
-                        color="primary"
-                        variant="flat"
-                        startContent={
-                          <Icon
-                            icon="solar:calendar-add-outline"
-                            className="text-xs"
-                          />
-                        }
-                        className="font-medium"
-                      >
-                        Da: {formatDate(filters.startDate)}
-                      </Chip>
-                    )}
-                    {filters.endDate && (
-                      <Chip
-                        size="md"
-                        color="primary"
-                        variant="flat"
-                        startContent={
-                          <Icon
-                            icon="solar:calendar-check-outline"
-                            className="text-xs"
-                          />
-                        }
-                        className="font-medium"
-                      >
-                        A: {formatDate(filters.endDate)}
-                      </Chip>
-                    )}
-                    {filters.teamMember !== "" && (
-                      <Chip
-                        size="md"
-                        color="primary"
-                        variant="flat"
-                        startContent={
-                          <Icon icon="solar:user-outline" className="text-xs" />
-                        }
-                        className="font-medium"
-                      >
-                        Team:{" "}
-                        {
-                          getUniqueTeamMembers().find(
-                            (m) => m.user_id === parseInt(filters.teamMember)
-                          )?.name
-                        }
-                      </Chip>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </ModalBody>
-          <ModalFooter className="pt-6 border-t border-default-200">
-            <div className="flex justify-between w-full">
-              <Button
-                variant="light"
-                color="danger"
-                onPress={clearFilters}
-                isDisabled={getActiveFiltersCount() === 0}
-                startContent={
-                  <Icon icon="solar:trash-bin-minimalistic-outline" />
-                }
-              >
-                Cancella Tutti
-              </Button>
-              <div className="flex gap-3">
-                <Button
-                  variant="light"
-                  onPress={() => setIsFilterModalOpen(false)}
-                >
-                  Chiudi
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={() => setIsFilterModalOpen(false)}
-                  startContent={<Icon icon="solar:check-circle-outline" />}
-                >
-                  Applica Filtri
-                </Button>
-              </div>
-            </div>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </div>
   );
 }
