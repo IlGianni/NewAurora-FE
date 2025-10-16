@@ -2,7 +2,7 @@ import AuthPage from "./pages/authentication/AuthPage";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Settings from "./pages/settings/Settings";
 import Projects from "./pages/projects/Projects";
-import ProjectDetail from "./pages/projects/ProjectDetail";
+import ProjectDetail from "./pages/projects/projectDetail/ProjectDetail";
 import Tasks from "./pages/tasks/Tasks";
 import AppLayout from "./components/Layout/AppLayout";
 

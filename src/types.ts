@@ -54,3 +54,49 @@ export interface AlertData {
   isOpen: boolean;
   onClose: () => void;
 }
+
+// Tipi per le metodologie di progetto
+export type ProjectMethodology = "scrum" | "kanban";
+
+// Interfaccia per i task
+export interface Task {
+  task_id: number;
+  title: string;
+  description: string;
+  status: string;
+  priority: "low" | "medium" | "high";
+  assigned_to?: User;
+  sprint_id?: number | null;
+  column_id?: number | null;
+  order: number;
+  story_points?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Interfaccia per gli Sprint (Scrum)
+export interface Sprint {
+  sprint_id: number;
+  name: string;
+  goal: string;
+  start_date: string;
+  end_date: string;
+  status: "planned" | "active" | "completed";
+  project_id: number;
+  created_at: string;
+  updated_at: string;
+  tasks: Task[];
+}
+
+// Interfaccia per le Colonne Kanban
+export interface KanbanColumn {
+  column_id: number;
+  name: string;
+  color: string;
+  order: number;
+  wip_limit?: number; // Work In Progress limit
+  project_id: number;
+  created_at: string;
+  updated_at: string;
+  tasks: Task[];
+}
