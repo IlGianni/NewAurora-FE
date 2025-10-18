@@ -2,10 +2,8 @@ import AuthPage from "./pages/authentication/AuthPage";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Settings from "./pages/settings/Settings";
 import Projects from "./pages/projects/Projects";
-import ProjectDetail from "./pages/projects/projectDetail/ProjectDetail";
-import Tasks from "./pages/tasks/Tasks";
+import ProjectDetail from "./pages/projects/ProjectDetail";
 import AppLayout from "./components/Layout/AppLayout";
-
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
@@ -74,7 +72,6 @@ function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
             <Route path="/projects/create" element={<ProjectCreator />} />
-            <Route path="/tasks" element={<Tasks />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </>
         )}

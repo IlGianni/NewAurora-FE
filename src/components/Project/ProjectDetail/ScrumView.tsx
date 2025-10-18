@@ -1,31 +1,6 @@
-import { useState } from "react";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Input,
-  Textarea,
-  useDisclosure,
-  Chip,
-  Avatar,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Tabs,
-  Tab,
-} from "@heroui/react";
-import { Icon } from "@iconify/react";
-import type { Sprint, Task } from "../../../types";
-import {
-  DndContext,
   closestCorners,
+  DndContext,
   DragOverlay,
   PointerSensor,
   useSensor,
@@ -34,12 +9,34 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
   arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import {
+  Button,
+  Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  Tab,
+  Tabs,
+  Textarea,
+  useDisclosure,
+} from "@heroui/react";
+import { Icon } from "@iconify/react";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import type { Sprint, Task, TaskPriority, TaskStatus } from "../../../types";
 import SprintKanbanView from "./SprintKanbanView";
 
 interface ScrumViewProps {
@@ -79,14 +76,6 @@ function SortableTask({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const priorityConfig = {
-    low: { color: "#10b981", bg: "#f0fdf4", label: "Bassa" },
-    medium: { color: "#f59e0b", bg: "#fffbeb", label: "Media" },
-    high: { color: "#ef4444", bg: "#fef2f2", label: "Alta" },
-  } as const;
-
-  const priority = priorityConfig[task.priority];
-
   return (
     <div ref={setNodeRef} style={style} className="group">
       <div
@@ -123,13 +112,6 @@ function SortableTask({
               <h4 className="font-semibold text-sm text-default-900 leading-snug">
                 {task.title}
               </h4>
-              {task.assigned_to && (
-                <Avatar
-                  size="sm"
-                  name={`${task.assigned_to.name} ${task.assigned_to.surname}`}
-                  className="w-6 h-6 text-[10px] flex-shrink-0"
-                />
-              )}
             </div>
 
             {task.description && (
@@ -143,11 +125,10 @@ function SortableTask({
                 <span
                   className="text-[10px] font-semibold px-2.5 py-1 rounded-md"
                   style={{
-                    color: priority.color,
-                    backgroundColor: priority.bg,
+                    backgroundColor: task.task_priority.color,
                   }}
                 >
-                  {priority.label}
+                  {task.task_priority?.name}
                 </span>
                 {task.story_points && (
                   <span className="text-[10px] font-semibold text-primary-600 px-2.5 py-1 bg-primary-50 rounded-md">
@@ -183,15 +164,19 @@ function SortableTask({
                   >
                     Sposta nel Backlog
                   </DropdownItem>
-                  {availableSprints.map((sprint) => (
-                    <DropdownItem
-                      key={sprint.sprint_id}
-                      onPress={() => onMoveTask(task.task_id, sprint.sprint_id)}
-                      startContent={<Icon icon="solar:rocket-2-linear" />}
-                    >
-                      Sposta in {sprint.name}
-                    </DropdownItem>
-                  ))}
+                  <>
+                    {availableSprints.map((sprint: Sprint) => (
+                      <DropdownItem
+                        key={sprint.sprint_id}
+                        onPress={() =>
+                          onMoveTask(task.task_id, sprint.sprint_id)
+                        }
+                        startContent={<Icon icon="solar:rocket-2-linear" />}
+                      >
+                        Sposta in {sprint.name}
+                      </DropdownItem>
+                    ))}
+                  </>
                 </DropdownMenu>
               </Dropdown>
             </div>
@@ -205,10 +190,30 @@ function SortableTask({
 export default function ScrumView({ projectId }: ScrumViewProps) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [sprintModalOpen, setSprintModalOpen] = useState(false);
-  const [selectedSprint, setSelectedSprint] = useState<number | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpen, setTaskDetailOpen] = useState(false);
+  const [TaskStatuses, setTaskStatuses] = useState<TaskStatus[]>([]);
+  const [TaskPriorities, setTaskPriorities] = useState<TaskPriority[]>([]);
+
+  useEffect(() => {
+    axios
+      .get(`/project/GET/get-task-statuses`, {
+        params: { project_id: projectId },
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          console.log(res.data);
+          setTaskStatuses(res.data.task_statuses);
+        }
+      });
+    axios.get(`/project/GET/get-task-priorities`).then((res) => {
+      if (res.status === 200) {
+        console.log(res.data);
+        setTaskPriorities(res.data.task_priorities);
+      }
+    });
+  }, [projectId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -219,123 +224,16 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
   );
 
   // Dati mock - da sostituire con chiamate API
-  const [backlog, setBacklog] = useState<Task[]>([
-    {
-      task_id: 1,
-      title: "Implementare autenticazione",
-      description: "Sistema di login con JWT",
-      status: "backlog",
-      priority: "high",
-      order: 0,
-      story_points: 8,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      task_id: 2,
-      title: "Design homepage",
-      description: "Creare mockup della homepage",
-      status: "backlog",
-      priority: "medium",
-      order: 1,
-      story_points: 5,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      task_id: 3,
-      title: "Setup database",
-      description: "Configurare PostgreSQL",
-      status: "backlog",
-      priority: "high",
-      order: 2,
-      story_points: 3,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  ]);
+  const [backlog, setBacklog] = useState<Task[]>([]);
 
-  const [sprints, setSprints] = useState<Sprint[]>([
-    {
-      sprint_id: 1,
-      name: "Sprint 1 - Foundation",
-      goal: "Impostare l'infrastruttura base del progetto",
-      start_date: "2024-01-15",
-      end_date: "2024-01-29",
-      status: "active",
-      project_id: projectId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      tasks: [
-        {
-          task_id: 4,
-          title: "Setup CI/CD",
-          description: "Configurare pipeline di deployment",
-          status: "in_progress",
-          priority: "high",
-          sprint_id: 1,
-          order: 0,
-          story_points: 5,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          task_id: 5,
-          title: "Creare componenti base",
-          description: "Button, Input, Card components",
-          status: "done",
-          priority: "medium",
-          sprint_id: 1,
-          order: 1,
-          story_points: 8,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          task_id: 6,
-          title: "Design sistema colori",
-          description: "Definire palette e variabili CSS",
-          status: "todo",
-          priority: "medium",
-          sprint_id: 1,
-          order: 2,
-          story_points: 3,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          task_id: 7,
-          title: "Implementare routing",
-          description: "Setup React Router e navigazione",
-          status: "review",
-          priority: "high",
-          sprint_id: 1,
-          order: 3,
-          story_points: 5,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          task_id: 8,
-          title: "Testing setup",
-          description: "Configurare Jest e React Testing Library",
-          status: "todo",
-          priority: "low",
-          sprint_id: 1,
-          order: 4,
-          story_points: 2,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ],
-    },
-  ]);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
 
   // Form state
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
-    priority: "medium" as Task["priority"],
+    task_status_id: 1,
+    task_priority_id: 1,
     story_points: 0,
   });
 
@@ -347,44 +245,10 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
   });
 
   const handleCreateTask = () => {
-    const task: Task = {
-      task_id: Date.now(),
-      title: newTask.title,
-      description: newTask.description,
-      status: "backlog",
-      priority: newTask.priority,
-      order: backlog.length,
-      story_points: newTask.story_points,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    setBacklog([...backlog, task]);
-    setNewTask({
-      title: "",
-      description: "",
-      priority: "medium",
-      story_points: 0,
-    });
     onClose();
   };
 
   const handleCreateSprint = () => {
-    const sprint: Sprint = {
-      sprint_id: Date.now(),
-      name: newSprint.name,
-      goal: newSprint.goal,
-      start_date: newSprint.start_date,
-      end_date: newSprint.end_date,
-      status: "planned",
-      project_id: projectId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      tasks: [],
-    };
-
-    setSprints([...sprints, sprint]);
-    setNewSprint({ name: "", goal: "", start_date: "", end_date: "" });
     setSprintModalOpen(false);
   };
 
@@ -512,30 +376,21 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
     }
   };
 
-  const getSprintProgress = (sprint: Sprint) => {
-    const completed = sprint.tasks.filter(
-      (t) => t.status === "completed"
-    ).length;
-    return sprint.tasks.length > 0
-      ? (completed / sprint.tasks.length) * 100
-      : 0;
-  };
-
   const getTotalStoryPoints = (tasks: Task[]) => {
     return tasks.reduce((sum, task) => sum + (task.story_points || 0), 0);
   };
 
-  const activeSprint = sprints.find((s) => s.status === "active");
+  const activeSprint = sprints.find((s) => s.is_active);
 
   const handleStartSprint = (sprintId: number) => {
     setSprints((prev) =>
       prev.map((s) => {
         if (s.sprint_id === sprintId) {
-          return { ...s, status: "active" as const };
+          return { ...s, is_active: true as const };
         }
         // Deattiva altri sprint attivi
-        if (s.status === "active") {
-          return { ...s, status: "planned" as const };
+        if (s.is_active) {
+          return { ...s, is_active: false as const };
         }
         return s;
       })
@@ -547,7 +402,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
       setSprints((prev) =>
         prev.map((s) =>
           s.sprint_id === activeSprint.sprint_id
-            ? { ...s, status: "completed" as const }
+            ? { ...s, is_active: false as const }
             : s
         )
       );
@@ -619,12 +474,6 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
       );
     }
   };
-
-  const priorityConfig = {
-    low: { color: "#10b981", bg: "#f0fdf4", label: "Bassa" },
-    medium: { color: "#f59e0b", bg: "#fffbeb", label: "Media" },
-    high: { color: "#ef4444", bg: "#fef2f2", label: "Alta" },
-  } as const;
 
   return (
     <div className="space-y-6">
@@ -701,7 +550,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
 
                 {/* Sprint Pianificati */}
                 {sprints
-                  .filter((s) => s.status === "planned")
+                  .filter((s) => s.is_active)
                   .map((sprint) => (
                     <div
                       key={sprint.sprint_id}
@@ -718,7 +567,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                             </span>
                           </div>
                           <p className="text-xs text-default-600 mb-3">
-                            {sprint.goal}
+                            {sprint.description}
                           </p>
                           <div className="flex items-center gap-3 text-[11px] text-default-500">
                             <span className="flex items-center gap-1">
@@ -824,7 +673,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                   ))}
 
                 {/* Sprint Attivo */}
-                {sprints.filter((s) => s.status === "active").length === 0 ? (
+                {sprints.filter((s) => s.is_active).length === 0 ? (
                   <div className="bg-gradient-to-br from-default-50 to-default-100 border-2 border-dashed border-default-300 rounded-xl p-8 text-center">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4 shadow-sm">
                       <Icon
@@ -841,7 +690,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                   </div>
                 ) : (
                   sprints
-                    .filter((s) => s.status === "active")
+                    .filter((s) => s.is_active)
                     .map((sprint) => (
                       <div
                         key={sprint.sprint_id}
@@ -858,7 +707,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                               </span>
                             </div>
                             <p className="text-xs text-default-600 mb-3">
-                              {sprint.goal}
+                              {sprint.description}
                             </p>
                             <div className="flex items-center gap-3 text-[11px] text-default-500">
                               <span className="flex items-center gap-1">
@@ -896,7 +745,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                 />
                                 {
                                   sprint.tasks.filter(
-                                    (t) => t.status === "completed"
+                                    (t) => t.task_status.name === "completed"
                                   ).length
                                 }
                                 /{sprint.tasks.length}
@@ -1030,13 +879,10 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                           <span
                             className="text-[10px] font-medium px-2 py-0.5 rounded-full"
                             style={{
-                              color:
-                                priorityConfig[selectedTask.priority].color,
-                              backgroundColor:
-                                priorityConfig[selectedTask.priority].bg,
+                              backgroundColor: selectedTask.task_priority.color,
                             }}
                           >
-                            {priorityConfig[selectedTask.priority].label}
+                            {selectedTask.task_priority.name}
                           </span>
                           {selectedTask.story_points && (
                             <span className="text-[10px] font-medium text-default-400 px-2 py-0.5 bg-default-100 rounded-full">
@@ -1062,28 +908,9 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                 Status
                               </label>
                               <Chip size="sm" variant="flat">
-                                {selectedTask.status}
+                                {selectedTask.task_status.name}
                               </Chip>
                             </div>
-
-                            {selectedTask.assigned_to && (
-                              <div>
-                                <label className="text-sm font-semibold text-default-700 mb-2 block">
-                                  Assegnato a
-                                </label>
-                                <div className="flex items-center gap-2">
-                                  <Avatar
-                                    size="sm"
-                                    name={`${selectedTask.assigned_to.name} ${selectedTask.assigned_to.surname}`}
-                                    className="w-8 h-8"
-                                  />
-                                  <span className="text-sm">
-                                    {selectedTask.assigned_to.name}{" "}
-                                    {selectedTask.assigned_to.surname}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
                           </div>
 
                           <div>
@@ -1150,21 +977,33 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                               variant="bordered"
                               className="justify-start"
                             >
-                              Priorità: {newTask.priority}
+                              Priorità :{" "}
+                              {
+                                TaskPriorities.find(
+                                  (p) =>
+                                    p.task_priority_id ===
+                                    newTask.task_priority_id
+                                )?.name
+                              }
                             </Button>
                           </DropdownTrigger>
                           <DropdownMenu
-                            selectedKeys={[newTask.priority]}
+                            selectedKeys={[newTask.task_priority_id]}
                             onSelectionChange={(keys) => {
-                              const selected = Array.from(
-                                keys
-                              )[0] as Task["priority"];
-                              setNewTask({ ...newTask, priority: selected });
+                              const selected =
+                                Array.from(keys)[0 as Task["task_priority_id"]];
+                              setNewTask({
+                                ...newTask,
+                                task_priority_id:
+                                  selected as Task["task_priority_id"],
+                              });
                             }}
                           >
-                            <DropdownItem key="low">Low</DropdownItem>
-                            <DropdownItem key="medium">Medium</DropdownItem>
-                            <DropdownItem key="high">High</DropdownItem>
+                            {TaskPriorities.map((p) => (
+                              <DropdownItem key={p.task_priority_id}>
+                                {p.name}
+                              </DropdownItem>
+                            ))}
                           </DropdownMenu>
                         </Dropdown>
                         <Input
@@ -1344,7 +1183,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                         </span>
                       </div>
                       <p className="text-xs text-default-600 mb-3">
-                        {activeSprint.goal}
+                        {activeSprint.description}
                       </p>
                       <div className="flex items-center gap-3 text-[11px] text-default-500">
                         <span className="flex items-center gap-1">
@@ -1379,7 +1218,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                           />
                           {
                             activeSprint.tasks.filter(
-                              (t) => t.status === "done"
+                              (t) => t.task_status.name === "Completed"
                             ).length
                           }
                           /{activeSprint.tasks.length}

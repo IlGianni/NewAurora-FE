@@ -1,12 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
-import type { ProjectMethodology } from "../../../types";
+import type { Project, ProjectMethodology } from "../../../types";
 import ScrumView from "./ScrumView";
 import KanbanView from "./KanbanView";
+import axios from "axios";
+import { Spinner } from "@heroui/react";
 
-export default function ProjectDetailTask() {
+export default function ProjectDetailTask({
+  unique_id,
+}: {
+  unique_id: string;
+}) {
   const [methodology, setMethodology] = useState<ProjectMethodology>("scrum");
-  const projectId = 1; // Questo dovrebbe venire dai props o dal context
+  const [project, setProject] = useState<Project | null>(null);
+  useEffect(() => {
+    axios
+      .get(`/project/GET/get-project-by-unique-id`, {
+        params: {
+          unique_id: unique_id,
+        },
+      })
+      .then((res) => {
+        setProject(res.data.project);
+      });
+  }, [unique_id]);
+
+  if (!project) {
+    return (
+      <div className="flex justify-center items-center h-84">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -132,9 +157,9 @@ export default function ProjectDetailTask() {
       {/* Vista corrispondente */}
       <div className="mt-6">
         {methodology === "scrum" ? (
-          <ScrumView projectId={projectId} />
+          <ScrumView projectId={project.project_id} />
         ) : (
-          <KanbanView projectId={projectId} />
+          <KanbanView projectId={project.project_id} />
         )}
       </div>
     </div>

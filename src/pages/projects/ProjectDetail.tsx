@@ -2,7 +2,7 @@ import { Button, Chip, Skeleton, Tab, Tabs } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import ProjectDetailTask from "./ProjectDetailTask";
+import ProjectDetailTask from "../../components/Project/ProjectDetail/ProjectDetailTask";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -178,7 +178,7 @@ export default function ProjectDetail() {
             </div>
           }
         >
-          <ProjectDetailTask />
+          <ProjectDetailTask unique_id={id || ""} />
         </Tab>
         <Tab
           key="documents"
