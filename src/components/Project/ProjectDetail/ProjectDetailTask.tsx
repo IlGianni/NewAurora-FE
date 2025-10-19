@@ -4,7 +4,7 @@ import type { Project, ProjectMethodology } from "../../../types";
 import ScrumView from "./ScrumView";
 import KanbanView from "./KanbanView";
 import axios from "axios";
-import { Spinner } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 
 export default function ProjectDetailTask({
   unique_id,
@@ -47,28 +47,28 @@ export default function ProjectDetailTask({
             </p>
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={() => setMethodology("scrum")}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+              className={`${
                 methodology === "scrum"
-                  ? "bg-primary text-white shadow-sm"
-                  : "bg-white text-default-600 border border-default-200 hover:border-default-300"
+                  ? "bg-black text-white"
+                  : "bg-white text-black"
               }`}
             >
               <Icon icon="solar:rocket-2-linear" className="text-base" />
               Scrum
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setMethodology("kanban")}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+              className={`${
                 methodology === "kanban"
-                  ? "bg-primary text-white shadow-sm"
-                  : "bg-white text-default-600 border border-default-200 hover:border-default-300"
+                  ? "bg-black text-white"
+                  : "bg-white text-black"
               }`}
             >
               <Icon icon="solar:clipboard-list-linear" className="text-base" />
               Kanban
-            </button>
+            </Button>
           </div>
         </div>
 

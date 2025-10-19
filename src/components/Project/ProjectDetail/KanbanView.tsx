@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Modal,
@@ -10,14 +10,13 @@ import {
   Textarea,
   useDisclosure,
   Chip,
-  Avatar,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import type { KanbanColumn, Task } from "../../../types";
+import type { TaskStatus, Task, TaskPriority } from "../../../types";
 import {
   DndContext,
   DragOverlay,
@@ -27,6 +26,7 @@ import {
   closestCorners,
   type DragEndEvent,
   type DragStartEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -34,9 +34,15 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import axios from "axios";
 
 interface KanbanViewProps {
   projectId: number;
+}
+
+// Estendere TaskStatus per includere i task
+interface TaskStatusWithTasks extends TaskStatus {
+  tasks: Task[];
 }
 
 // Componente per singolo task drag & drop
@@ -68,16 +74,12 @@ function SortableTaskCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const priorityConfig = {
-    low: { color: "#10b981", bg: "#f0fdf4", label: "Bassa" },
-    medium: { color: "#f59e0b", bg: "#fffbeb", label: "Media" },
-    high: { color: "#ef4444", bg: "#fef2f2", label: "Alta" },
-  } as const;
-
-  const priority = priorityConfig[task.priority];
-
   return (
-    <div ref={setNodeRef} style={style} className="group mb-2">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group mb-2 hover:cursor-pointer"
+    >
       <div className="bg-white border border-default-200 rounded-xl p-3 hover:border-default-300 hover:shadow-sm transition-all duration-200">
         <div className="flex items-start gap-2">
           {/* Drag Handle */}
@@ -109,27 +111,19 @@ function SortableTaskCard({
               {task.description}
             </p>
             <div className="flex items-center gap-2">
-              <span
-                className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                style={{
-                  color: priority.color,
-                  backgroundColor: priority.bg,
-                }}
+              <Chip
+                color={task.task_priority.color as any}
+                variant="flat"
+                size="sm"
+                className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
               >
-                {priority.label}
-              </span>
+                {task.task_priority.name}
+              </Chip>
             </div>
           </div>
 
           {/* Actions */}
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            {task.assigned_to && (
-              <Avatar
-                size="sm"
-                name={`${task.assigned_to.name} ${task.assigned_to.surname}`}
-                className="w-6 h-6 text-xs"
-              />
-            )}
             <Dropdown>
               <DropdownTrigger>
                 <Button
@@ -167,15 +161,16 @@ function KanbanColumnCard({
   onEditColumn,
   onTaskClick,
 }: {
-  column: KanbanColumn;
+  column: TaskStatusWithTasks;
   onAddTask: (columnId: number) => void;
   onDeleteColumn: (columnId: number) => void;
   onEditColumn: (columnId: number) => void;
   onTaskClick: (task: Task) => void;
 }) {
-  const taskIds = column.tasks.map((t) => t.task_id);
-  const isOverLimit =
-    column.wip_limit && column.tasks.length >= column.wip_limit;
+  const taskIds = column.tasks.map((t: Task) => t.task_id);
+  const { setNodeRef } = useDroppable({
+    id: column.task_status_id,
+  });
 
   return (
     <div className="flex-shrink-0 w-80">
@@ -184,8 +179,7 @@ function KanbanColumnCard({
         <div className="flex items-start justify-between mb-3 pb-3 border-b border-default-200">
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
             <div
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm"
-              style={{ backgroundColor: column.color }}
+              className={`w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm bg-${column.color}`}
             />
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-sm text-default-900 truncate uppercase tracking-wide">
@@ -195,17 +189,6 @@ function KanbanColumnCard({
                 <span className="font-semibold bg-white px-2 py-0.5 rounded-full">
                   {column.tasks.length} task
                 </span>
-                {column.wip_limit && (
-                  <span
-                    className={`font-semibold px-2 py-0.5 rounded-full ${
-                      isOverLimit
-                        ? "text-danger-600 bg-danger-50"
-                        : "text-default-600 bg-white"
-                    }`}
-                  >
-                    WIP: {column.tasks.length}/{column.wip_limit}
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -224,14 +207,14 @@ function KanbanColumnCard({
             <DropdownMenu>
               <DropdownItem
                 key="add-task"
-                onPress={() => onAddTask(column.column_id)}
+                onPress={() => onAddTask(column.task_status_id)}
                 startContent={<Icon icon="solar:add-circle-linear" />}
               >
                 Aggiungi Task
               </DropdownItem>
               <DropdownItem
                 key="edit"
-                onPress={() => onEditColumn(column.column_id)}
+                onPress={() => onEditColumn(column.task_status_id)}
                 startContent={<Icon icon="solar:pen-linear" />}
               >
                 Modifica Colonna
@@ -240,7 +223,7 @@ function KanbanColumnCard({
                 key="delete"
                 className="text-danger"
                 color="danger"
-                onPress={() => onDeleteColumn(column.column_id)}
+                onPress={() => onDeleteColumn(column.task_status_id)}
                 startContent={<Icon icon="solar:trash-bin-linear" />}
               >
                 Elimina Colonna
@@ -251,6 +234,7 @@ function KanbanColumnCard({
 
         {/* Task list */}
         <div
+          ref={setNodeRef}
           className="flex-1 overflow-y-auto -mx-1 px-1"
           style={{ maxHeight: "calc(100vh - 450px)" }}
         >
@@ -288,7 +272,7 @@ function KanbanColumnCard({
           startContent={
             <Icon icon="solar:add-circle-linear" className="text-lg" />
           }
-          onPress={() => onAddTask(column.column_id)}
+          onPress={() => onAddTask(column.task_status_id)}
         >
           Aggiungi Task
         </Button>
@@ -303,123 +287,68 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
     onOpen: onTaskModalOpen,
     onClose: onTaskModalClose,
   } = useDisclosure();
-  const {
-    isOpen: isColumnModalOpen,
-    onOpen: onColumnModalOpen,
-    onClose: onColumnModalClose,
-  } = useDisclosure();
 
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [selectedColumnId, setSelectedColumnId] = useState<number | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpen, setTaskDetailOpen] = useState(false);
 
-  // Dati mock - da sostituire con chiamate API
-  const [columns, setColumns] = useState<KanbanColumn[]>([
-    {
-      column_id: 1,
-      name: "Da Fare",
-      color: "#94A3B8",
-      order: 0,
-      wip_limit: undefined,
-      project_id: projectId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      tasks: [
-        {
-          task_id: 1,
-          title: "Implementare autenticazione",
-          description: "Sistema di login con JWT",
-          status: "todo",
-          priority: "high",
-          column_id: 1,
-          order: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          task_id: 2,
-          title: "Design homepage",
-          description: "Creare mockup della homepage",
-          status: "todo",
-          priority: "medium",
-          column_id: 1,
-          order: 1,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ],
-    },
-    {
-      column_id: 2,
-      name: "In Corso",
-      color: "#3B82F6",
-      order: 1,
-      wip_limit: 3,
-      project_id: projectId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      tasks: [
-        {
-          task_id: 3,
-          title: "Setup CI/CD",
-          description: "Configurare pipeline di deployment",
-          status: "in_progress",
-          priority: "high",
-          column_id: 2,
-          order: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ],
-    },
-    {
-      column_id: 3,
-      name: "In Review",
-      color: "#F59E0B",
-      order: 2,
-      wip_limit: 2,
-      project_id: projectId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      tasks: [],
-    },
-    {
-      column_id: 4,
-      name: "Completato",
-      color: "#10B981",
-      order: 3,
-      wip_limit: undefined,
-      project_id: projectId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      tasks: [
-        {
-          task_id: 4,
-          title: "Setup progetto",
-          description: "Inizializzazione repository",
-          status: "completed",
-          priority: "medium",
-          column_id: 4,
-          order: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ],
-    },
-  ]);
+  // Stati per i dati
+  const [columns, setColumns] = useState<TaskStatusWithTasks[]>([]);
+  const [TaskPriorities, setTaskPriorities] = useState<TaskPriority[]>([]);
+
+  useEffect(() => {
+    // Carica i task status con i task associati
+    axios
+      .get(`/project/GET/get-task-statuses`, {
+        params: { project_id: projectId },
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          // Trasforma i task status per includere i task
+          const statusesWithTasks: TaskStatusWithTasks[] =
+            res.data.task_statuses.map((status: TaskStatus) => ({
+              ...status,
+              tasks: [],
+            }));
+          setColumns(statusesWithTasks);
+        }
+      });
+
+    // Carica le priorità dei task
+    axios.get(`/project/GET/get-task-priorities`).then((res) => {
+      if (res.status === 200) {
+        setTaskPriorities(res.data.task_priorities);
+      }
+    });
+
+    // Carica i task del progetto
+    axios
+      .get(`/project/GET/get-tasks-by-project-id`, {
+        params: { project_id: projectId },
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          const tasks: Task[] = res.data.tasks;
+          // Distribuisci i task nelle colonne appropriate
+          setColumns((prevColumns) =>
+            prevColumns.map((column) => ({
+              ...column,
+              tasks: tasks.filter(
+                (task) => task.task_status_id === column.task_status_id
+              ),
+            }))
+          );
+        }
+      });
+  }, [projectId]);
 
   // Form state
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
-    priority: "medium" as Task["priority"],
-  });
-
-  const [newColumn, setNewColumn] = useState({
-    name: "",
-    color: "#94A3B8",
-    wip_limit: undefined as number | undefined,
+    task_priority_id: 1,
+    task_status_id: 1,
   });
 
   const sensors = useSensors(
@@ -432,22 +361,23 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const task = columns
-      .flatMap((col) => col.tasks)
-      .find((t) => t.task_id === active.id);
-    setActiveTask(task || null);
-  };
 
+    // Trova il task attivo in tutte le colonne
+    let activeTask: Task | null = null;
+    for (const column of columns) {
+      activeTask = column.tasks.find((t) => t.task_id === active.id) || null;
+      if (activeTask) break;
+    }
+    setActiveTask(activeTask);
+  };
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveTask(null);
 
-    if (!over) return;
+    if (!over || active.id === over.id) return;
 
     const activeId = active.id as number;
     const overId = over.id as number;
-
-    if (activeId === overId) return;
 
     setColumns((prevColumns) => {
       // Trova la colonna di origine
@@ -470,7 +400,7 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
       // Se non trovato nei task, potrebbe essere l'ID della colonna stessa
       if (overColumnIndex === -1) {
         overColumnIndex = prevColumns.findIndex(
-          (col) => col.column_id === overId
+          (col) => col.task_status_id === overId
         );
       }
 
@@ -489,7 +419,7 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
       // Aggiungi alla colonna di destinazione
       const updatedTask = {
         ...activeTask,
-        column_id: newColumns[overColumnIndex].column_id,
+        task_status_id: newColumns[overColumnIndex].task_status_id,
       };
 
       // Trova la posizione di inserimento
@@ -529,47 +459,42 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
       task_id: Date.now(),
       title: newTask.title,
       description: newTask.description,
-      status: "todo",
-      priority: newTask.priority,
-      column_id: selectedColumnId,
-      order: 0,
+      task_status_id: selectedColumnId,
+      task_priority_id: newTask.task_priority_id,
+      story_points: 0,
+      sprint_id: null,
+      project_id: projectId,
+      created_by_id: 1, // TODO: ottenere dall'utente loggato
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      task_status: columns.find((c) => c.task_status_id === selectedColumnId)!,
+      task_priority: TaskPriorities.find(
+        (p) => p.task_priority_id === newTask.task_priority_id
+      )!,
+      project: {} as any, // TODO: popolare con i dati del progetto
+      created_by: {} as any, // TODO: popolare con i dati dell'utente
     };
 
     setColumns((prevColumns) =>
       prevColumns.map((col) =>
-        col.column_id === selectedColumnId
+        col.task_status_id === selectedColumnId
           ? { ...col, tasks: [...col.tasks, task] }
           : col
       )
     );
 
-    setNewTask({ title: "", description: "", priority: "medium" });
+    setNewTask({
+      title: "",
+      description: "",
+      task_priority_id: 1,
+      task_status_id: 1,
+    });
     setSelectedColumnId(null);
     onTaskModalClose();
   };
 
-  const handleCreateColumn = () => {
-    const column: KanbanColumn = {
-      column_id: Date.now(),
-      name: newColumn.name,
-      color: newColumn.color,
-      order: columns.length,
-      wip_limit: newColumn.wip_limit,
-      project_id: projectId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      tasks: [],
-    };
-
-    setColumns([...columns, column]);
-    setNewColumn({ name: "", color: "#94A3B8", wip_limit: undefined });
-    onColumnModalClose();
-  };
-
   const handleDeleteColumn = (columnId: number) => {
-    setColumns(columns.filter((col) => col.column_id !== columnId));
+    setColumns(columns.filter((col) => col.task_status_id !== columnId));
   };
 
   const getTotalTasks = () => {
@@ -581,12 +506,6 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
     setTaskDetailOpen(true);
   };
 
-  const priorityConfig = {
-    low: { color: "#10b981", bg: "#f0fdf4", label: "Bassa" },
-    medium: { color: "#f59e0b", bg: "#fffbeb", label: "Media" },
-    high: { color: "#ef4444", bg: "#fef2f2", label: "Alta" },
-  } as const;
-
   return (
     <div className="space-y-6">
       {/* Header con azioni */}
@@ -597,16 +516,6 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
             {getTotalTasks()} task · {columns.length} colonne
           </p>
         </div>
-        <Button
-          color="primary"
-          onPress={onColumnModalOpen}
-          startContent={
-            <Icon icon="solar:add-square-linear" className="text-lg" />
-          }
-          className="font-medium shadow-sm"
-        >
-          Nuova Colonna
-        </Button>
       </div>
 
       {/* Board Kanban */}
@@ -618,18 +527,16 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
           onDragEnd={handleDragEnd}
         >
           <div className="flex gap-4 min-w-max">
-            {columns
-              .sort((a, b) => a.order - b.order)
-              .map((column) => (
-                <KanbanColumnCard
-                  key={column.column_id}
-                  column={column}
-                  onAddTask={handleAddTask}
-                  onDeleteColumn={handleDeleteColumn}
-                  onEditColumn={(id) => console.log("Edit column", id)}
-                  onTaskClick={handleTaskClick}
-                />
-              ))}
+            {columns.map((column) => (
+              <KanbanColumnCard
+                key={column.task_status_id}
+                column={column}
+                onAddTask={handleAddTask}
+                onDeleteColumn={handleDeleteColumn}
+                onEditColumn={(id) => console.log("Edit column", id)}
+                onTaskClick={handleTaskClick}
+              />
+            ))}
           </div>
 
           <DragOverlay
@@ -690,19 +597,29 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
               <Dropdown>
                 <DropdownTrigger>
                   <Button variant="bordered" className="justify-start">
-                    Priorità: {newTask.priority}
+                    Priorità:{" "}
+                    {
+                      TaskPriorities.find(
+                        (p) => p.task_priority_id === newTask.task_priority_id
+                      )?.name
+                    }
                   </Button>
                 </DropdownTrigger>
                 <DropdownMenu
-                  selectedKeys={[newTask.priority]}
+                  selectedKeys={[newTask.task_priority_id.toString()]}
                   onSelectionChange={(keys) => {
-                    const selected = Array.from(keys)[0] as Task["priority"];
-                    setNewTask({ ...newTask, priority: selected });
+                    const selected = Array.from(keys)[0] as string;
+                    setNewTask({
+                      ...newTask,
+                      task_priority_id: parseInt(selected),
+                    });
                   }}
                 >
-                  <DropdownItem key="low">Low</DropdownItem>
-                  <DropdownItem key="medium">Medium</DropdownItem>
-                  <DropdownItem key="high">High</DropdownItem>
+                  {TaskPriorities.map((p) => (
+                    <DropdownItem key={p.task_priority_id.toString()}>
+                      {p.name}
+                    </DropdownItem>
+                  ))}
                 </DropdownMenu>
               </Dropdown>
             </div>
@@ -730,15 +647,23 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
               <ModalHeader className="flex flex-col gap-1">
                 <h3 className="text-lg font-semibold">{selectedTask.title}</h3>
                 <div className="flex items-center gap-2 mt-2">
-                  <span
-                    className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                    style={{
-                      color: priorityConfig[selectedTask.priority].color,
-                      backgroundColor: priorityConfig[selectedTask.priority].bg,
-                    }}
+                  <Chip
+                    color={selectedTask.task_priority?.color as any}
+                    variant="flat"
+                    size="sm"
+                    className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
                   >
-                    {priorityConfig[selectedTask.priority].label}
-                  </span>
+                    {selectedTask.task_priority?.name}
+                  </Chip>
+                  {selectedTask.story_points && (
+                    <Chip
+                      variant="flat"
+                      size="sm"
+                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                    >
+                      {selectedTask.story_points} SP
+                    </Chip>
+                  )}
                 </div>
               </ModalHeader>
               <ModalBody>
@@ -757,29 +682,14 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
                       <label className="text-sm font-semibold text-default-700 mb-2 block">
                         Status
                       </label>
-                      <Chip size="sm" variant="flat">
-                        {selectedTask.status}
+                      <Chip
+                        color={selectedTask.task_status?.color as any}
+                        variant="flat"
+                        size="sm"
+                      >
+                        {selectedTask.task_status?.name}
                       </Chip>
                     </div>
-
-                    {selectedTask.assigned_to && (
-                      <div>
-                        <label className="text-sm font-semibold text-default-700 mb-2 block">
-                          Assegnato a
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <Avatar
-                            size="sm"
-                            name={`${selectedTask.assigned_to.name} ${selectedTask.assigned_to.surname}`}
-                            className="w-8 h-8"
-                          />
-                          <span className="text-sm">
-                            {selectedTask.assigned_to.name}{" "}
-                            {selectedTask.assigned_to.surname}
-                          </span>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   <div>
@@ -812,72 +722,6 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
               </ModalFooter>
             </>
           )}
-        </ModalContent>
-      </Modal>
-
-      {/* Modal Nuova Colonna */}
-      <Modal isOpen={isColumnModalOpen} onClose={onColumnModalClose} size="md">
-        <ModalContent>
-          <ModalHeader>Nuova Colonna</ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <Input
-                label="Nome Colonna"
-                placeholder="Es: In Testing"
-                value={newColumn.name}
-                onChange={(e) =>
-                  setNewColumn({ ...newColumn, name: e.target.value })
-                }
-              />
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Colore</label>
-                <div className="flex gap-2 flex-wrap">
-                  {[
-                    "#94A3B8",
-                    "#3B82F6",
-                    "#F59E0B",
-                    "#10B981",
-                    "#EF4444",
-                    "#8B5CF6",
-                    "#EC4899",
-                  ].map((color) => (
-                    <button
-                      key={color}
-                      className={`w-10 h-10 rounded-lg border-2 transition-all ${
-                        newColumn.color === color
-                          ? "border-black scale-110"
-                          : "border-transparent"
-                      }`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setNewColumn({ ...newColumn, color })}
-                    />
-                  ))}
-                </div>
-              </div>
-              <Input
-                type="number"
-                label="WIP Limit (opzionale)"
-                placeholder="Es: 3"
-                value={newColumn.wip_limit?.toString() || ""}
-                onChange={(e) =>
-                  setNewColumn({
-                    ...newColumn,
-                    wip_limit: e.target.value
-                      ? parseInt(e.target.value)
-                      : undefined,
-                  })
-                }
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onColumnModalClose}>
-              Annulla
-            </Button>
-            <Button color="primary" onPress={handleCreateColumn}>
-              Crea Colonna
-            </Button>
-          </ModalFooter>
         </ModalContent>
       </Modal>
     </div>

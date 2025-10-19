@@ -122,18 +122,22 @@ function SortableTask({
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span
-                  className="text-[10px] font-semibold px-2.5 py-1 rounded-md"
-                  style={{
-                    backgroundColor: task.task_priority.color,
-                  }}
+                <Chip
+                  color={task.task_priority?.color as any}
+                  variant="flat"
+                  size="sm"
+                  className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
                 >
                   {task.task_priority?.name}
-                </span>
+                </Chip>
                 {task.story_points && (
-                  <span className="text-[10px] font-semibold text-primary-600 px-2.5 py-1 bg-primary-50 rounded-md">
+                  <Chip
+                    variant="flat"
+                    size="sm"
+                    className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                  >
                     {task.story_points} SP
-                  </span>
+                  </Chip>
                 )}
               </div>
 
@@ -203,13 +207,11 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
       })
       .then((res) => {
         if (res.status === 200) {
-          console.log(res.data);
           setTaskStatuses(res.data.task_statuses);
         }
       });
     axios.get(`/project/GET/get-task-priorities`).then((res) => {
       if (res.status === 200) {
-        console.log(res.data);
         setTaskPriorities(res.data.task_priorities);
       }
     });
@@ -227,6 +229,28 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
   const [backlog, setBacklog] = useState<Task[]>([]);
 
   const [sprints, setSprints] = useState<Sprint[]>([]);
+
+  useEffect(() => {
+    axios
+      .get(`/project/GET/get-sprints-by-project-id`, {
+        params: { project_id: projectId },
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          setSprints(res.data.sprints);
+        }
+      });
+
+    axios
+      .get(`/project/GET/get-backlog-by-project-id`, {
+        params: { project_id: projectId },
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          setBacklog(res.data.backlog);
+        }
+      });
+  }, [projectId]);
 
   // Form state
   const [newTask, setNewTask] = useState({
@@ -550,7 +574,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
 
                 {/* Sprint Pianificati */}
                 {sprints
-                  .filter((s) => s.is_active)
+                  .filter((s) => !s.is_active)
                   .map((sprint) => (
                     <div
                       key={sprint.sprint_id}
@@ -876,18 +900,22 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                           {selectedTask.title}
                         </h3>
                         <div className="flex items-center gap-2 mt-2">
-                          <span
-                            className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                            style={{
-                              backgroundColor: selectedTask.task_priority.color,
-                            }}
+                          <Chip
+                            color={selectedTask.task_priority?.color as any}
+                            variant="flat"
+                            size="sm"
+                            className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
                           >
-                            {selectedTask.task_priority.name}
-                          </span>
+                            {selectedTask.task_priority?.name}
+                          </Chip>
                           {selectedTask.story_points && (
-                            <span className="text-[10px] font-medium text-default-400 px-2 py-0.5 bg-default-100 rounded-full">
+                            <Chip
+                              variant="flat"
+                              size="sm"
+                              className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                            >
                               {selectedTask.story_points} Story Points
-                            </span>
+                            </Chip>
                           )}
                         </div>
                       </ModalHeader>
@@ -907,7 +935,11 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                               <label className="text-sm font-semibold text-default-700 mb-2 block">
                                 Status
                               </label>
-                              <Chip size="sm" variant="flat">
+                              <Chip
+                                color={selectedTask.task_status?.color as any}
+                                variant="flat"
+                                size="sm"
+                              >
                                 {selectedTask.task_status.name}
                               </Chip>
                             </div>
@@ -1239,6 +1271,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                 {/* Kanban Board */}
                 <SprintKanbanView
                   tasks={activeSprint.tasks}
+                  taskStatuses={TaskStatuses}
                   onTasksChange={(updatedTasks) => {
                     setSprints((prev) =>
                       prev.map((s) =>
@@ -1248,7 +1281,6 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                       )
                     );
                   }}
-                  onTaskClick={handleTaskClick}
                 />
               </div>
             )}

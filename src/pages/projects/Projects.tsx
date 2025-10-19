@@ -4,7 +4,7 @@ import { Icon } from "@iconify/react";
 import ProjectCard from "../../components/Project/ProjectCard";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import type { Project } from "../../types";
+import type { Project, Task } from "../../types";
 import AlertComponent from "../../components/Layout/AlertComponent";
 import type { AlertData } from "../../types";
 
@@ -12,7 +12,7 @@ export default function Projects() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
   // UI states
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
@@ -51,6 +51,11 @@ export default function Projects() {
 
       if (response.status === 200) {
         setIsLoadingProjects(false);
+      }
+
+      const tasksResponse = await axios.get(`/project/GET/get-all-tasks`);
+      if (tasksResponse.status === 200) {
+        setAllTasks(tasksResponse.data.tasks);
         setIsLoadingStats(false);
       }
     } catch (error) {
@@ -60,10 +65,22 @@ export default function Projects() {
     }
   };
 
+  const projectsCount = projects.filter(
+    (project) => project.project_status.name !== "Completed"
+  ).length;
+
+  const completedTasksCount = allTasks.filter(
+    (task) => task.task_status.name === "completed"
+  ).length;
+
+  const remainingTasksCount = allTasks.filter(
+    (task) => task.task_status.name !== "completed"
+  ).length;
+
   const statistics = [
     {
       title: "Progetti Attivi",
-      value: 12,
+      value: projectsCount,
       icon: "solar:folder-open-bold",
       iconColor: "text-primary",
       changeType: "positive",
@@ -73,7 +90,7 @@ export default function Projects() {
     },
     {
       title: "Task Completate",
-      value: 48,
+      value: completedTasksCount,
       icon: "solar:check-circle-bold",
       iconColor: "text-success",
       changeType: "neutral",
@@ -83,7 +100,7 @@ export default function Projects() {
     },
     {
       title: "Task Rimanenti",
-      value: 12,
+      value: remainingTasksCount,
       icon: "solar:clipboard-list-bold",
       iconColor: "text-warning",
       changeType: "neutral",

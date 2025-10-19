@@ -1,14 +1,15 @@
 import { useState } from "react";
 import {
+  Chip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
   Button,
-  Avatar,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import type { Task } from "../../../types";
+import type { Task, TaskStatus } from "../../../types";
 import {
   DndContext,
   DragOverlay,
@@ -18,6 +19,7 @@ import {
   closestCorners,
   type DragEndEvent,
   type DragStartEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -29,22 +31,83 @@ import { CSS } from "@dnd-kit/utilities";
 
 interface SprintKanbanViewProps {
   tasks: Task[];
+  taskStatuses: TaskStatus[];
   onTasksChange: (tasks: Task[]) => void;
+}
+
+// Componente per colonna Kanban
+function KanbanColumn({
+  status,
+  tasks,
+  onTaskClick,
+}: {
+  status: TaskStatus;
+  tasks: Task[];
   onTaskClick?: (task: Task) => void;
-}
+}) {
+  const { setNodeRef } = useDroppable({
+    id: status.task_status_id,
+  });
 
-interface Column {
-  id: string;
-  name: string;
-  color: string;
-}
+  const taskIds = tasks.map((t: Task) => t.task_id);
 
-const COLUMNS: Column[] = [
-  { id: "todo", name: "Da Fare", color: "#94a3b8" },
-  { id: "in_progress", name: "In Corso", color: "#3b82f6" },
-  { id: "review", name: "Review", color: "#f59e0b" },
-  { id: "done", name: "Completato", color: "#10b981" },
-];
+  return (
+    <div className="flex flex-col">
+      <div
+        className="bg-default-50/50 border border-default-200 rounded-xl p-3 flex-1 backdrop-blur-sm"
+        data-column-id={status.task_status_id}
+      >
+        {/* Header colonna */}
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-default-200">
+          <div
+            className={`w-2 h-2 rounded-full flex-shrink-0 bg-${status.color}`}
+          />
+          <h3 className="font-bold text-xs text-default-900 flex-1 uppercase tracking-wide">
+            {status.name}
+          </h3>
+          <span className="text-xs font-semibold text-default-600 bg-white px-2 py-0.5 rounded-full">
+            {tasks.length}
+          </span>
+        </div>
+
+        {/* Task list */}
+        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+          <div
+            ref={setNodeRef}
+            className="min-h-[200px]"
+            onDrop={(e) => {
+              e.preventDefault();
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+            }}
+            data-droppable="true"
+          >
+            {tasks.length === 0 ? (
+              <div className="text-center py-10 text-default-400">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full mb-2 shadow-sm">
+                  <Icon
+                    icon="solar:clipboard-linear"
+                    className="text-2xl text-default-400"
+                  />
+                </div>
+                <p className="text-[10px] font-medium">Trascina qui i task</p>
+              </div>
+            ) : (
+              tasks.map((task) => (
+                <SortableTaskCard
+                  key={task.task_id}
+                  task={task}
+                  onTaskClick={onTaskClick}
+                />
+              ))
+            )}
+          </div>
+        </SortableContext>
+      </div>
+    </div>
+  );
+}
 
 // Componente per singolo task
 function SortableTaskCard({
@@ -74,14 +137,6 @@ function SortableTaskCard({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
-
-  const priorityConfig = {
-    low: { color: "#10b981", bg: "#f0fdf4", label: "Bassa" },
-    medium: { color: "#f59e0b", bg: "#fffbeb", label: "Media" },
-    high: { color: "#ef4444", bg: "#fef2f2", label: "Alta" },
-  } as const;
-
-  const priority = priorityConfig[task.priority];
 
   return (
     <div ref={setNodeRef} style={style} className="group">
@@ -119,13 +174,6 @@ function SortableTaskCard({
               <h4 className="font-semibold text-xs text-default-900 leading-snug">
                 {task.title}
               </h4>
-              {task.assigned_to && (
-                <Avatar
-                  size="sm"
-                  name={`${task.assigned_to.name} ${task.assigned_to.surname}`}
-                  className="w-5 h-5 text-[9px] flex-shrink-0"
-                />
-              )}
             </div>
 
             {task.description && (
@@ -135,19 +183,22 @@ function SortableTaskCard({
             )}
 
             <div className="flex items-center gap-1.5">
-              <span
-                className="text-[9px] font-semibold px-2 py-0.5 rounded"
-                style={{
-                  color: priority.color,
-                  backgroundColor: priority.bg,
-                }}
+              <Chip
+                color={task.task_priority?.color as any}
+                variant="flat"
+                size="sm"
+                className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
               >
-                {priority.label}
-              </span>
+                {task.task_priority?.name}
+              </Chip>
               {task.story_points && (
-                <span className="text-[9px] font-semibold text-primary-600 px-2 py-0.5 bg-primary-50 rounded">
+                <Chip
+                  variant="flat"
+                  size="sm"
+                  className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                >
                   {task.story_points} SP
-                </span>
+                </Chip>
               )}
             </div>
           </div>
@@ -159,10 +210,12 @@ function SortableTaskCard({
 
 export default function SprintKanbanView({
   tasks,
+  taskStatuses,
   onTasksChange,
-  onTaskClick,
 }: SprintKanbanViewProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskDetailOpen, setTaskDetailOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -187,149 +240,212 @@ export default function SprintKanbanView({
     const activeId = active.id as number;
     const overId = over.id;
 
-    // Se droppato su una colonna (ID stringa)
-    if (typeof overId === "string") {
-      const updatedTasks = tasks.map((task) =>
-        task.task_id === activeId ? { ...task, status: overId } : task
+    // Se droppato su una colonna (ID del task_status_id)
+    if (typeof overId === "number") {
+      const targetStatus = taskStatuses.find(
+        (status) => status.task_status_id === overId
       );
-      onTasksChange(updatedTasks);
+      if (targetStatus) {
+        const updatedTasks = tasks.map((task) =>
+          task.task_id === activeId
+            ? {
+                ...task,
+                task_status_id: targetStatus.task_status_id,
+                task_status: targetStatus,
+              }
+            : task
+        );
+        onTasksChange(updatedTasks);
+      }
       return;
     }
 
     // Se droppato su un altro task (ID numero)
     const activeTask = tasks.find((t) => t.task_id === activeId);
-    const overTask = tasks.find((t) => t.task_id === overId);
+    const overTask =
+      typeof overId === "number"
+        ? tasks.find((t) => t.task_id === overId)
+        : null;
 
     if (!activeTask || !overTask) return;
 
     // Se sono nella stessa colonna, riordina
-    if (activeTask.status === overTask.status) {
+    if (activeTask.task_status_id === overTask.task_status_id) {
       const oldIndex = tasks.findIndex((t) => t.task_id === activeId);
-      const newIndex = tasks.findIndex((t) => t.task_id === overId);
+      const newIndex =
+        typeof overId === "number"
+          ? tasks.findIndex((t) => t.task_id === overId)
+          : -1;
       onTasksChange(arrayMove(tasks, oldIndex, newIndex));
     } else {
       // Se sono in colonne diverse, sposta nella nuova colonna
       const updatedTasks = tasks.map((task) =>
-        task.task_id === activeId ? { ...task, status: overTask.status } : task
+        task.task_id === activeId
+          ? {
+              ...task,
+              task_status_id: overTask.task_status_id,
+              task_status: overTask.task_status,
+            }
+          : task
       );
       onTasksChange(updatedTasks);
     }
   };
 
-  const getTasksByStatus = (status: string) => {
-    return tasks.filter((task) => task.status === status);
+  const getTasksByStatus = (statusId: number) => {
+    return tasks.filter((task) => task.task_status_id === statusId);
   };
 
-  const getTaskIds = (status: string) => {
-    return getTasksByStatus(status).map((t) => t.task_id);
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setTaskDetailOpen(true);
   };
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="grid grid-cols-4 gap-3">
-        {COLUMNS.map((column) => {
-          const columnTasks = getTasksByStatus(column.id);
-
-          return (
-            <div key={column.id} className="flex flex-col">
-              <div
-                className="bg-default-50/50 border border-default-200 rounded-xl p-3 flex-1 backdrop-blur-sm"
-                data-column-id={column.id}
-              >
-                {/* Header colonna */}
-                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-default-200">
-                  <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: column.color }}
-                  />
-                  <h3 className="font-bold text-xs text-default-900 flex-1 uppercase tracking-wide">
-                    {column.name}
-                  </h3>
-                  <span className="text-xs font-semibold text-default-600 bg-white px-2 py-0.5 rounded-full">
-                    {columnTasks.length}
-                  </span>
-                </div>
-
-                {/* Task list */}
-                <SortableContext
-                  items={getTaskIds(column.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div
-                    className="min-h-[200px]"
-                    onDrop={(e) => {
-                      e.preventDefault();
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                    }}
-                    data-droppable="true"
-                  >
-                    {columnTasks.length === 0 ? (
-                      <div className="text-center py-10 text-default-400">
-                        <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full mb-2 shadow-sm">
-                          <Icon
-                            icon="solar:clipboard-linear"
-                            className="text-2xl text-default-400"
-                          />
-                        </div>
-                        <p className="text-[10px] font-medium">
-                          Trascina qui i task
-                        </p>
-                      </div>
-                    ) : (
-                      columnTasks.map((task) => (
-                        <SortableTaskCard
-                          key={task.task_id}
-                          task={task}
-                          onTaskClick={onTaskClick}
-                        />
-                      ))
-                    )}
-                  </div>
-                </SortableContext>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Overlay per il drag */}
-      <DragOverlay
-        dropAnimation={{
-          duration: 200,
-          easing: "cubic-bezier(0.25, 1, 0.5, 1)",
-        }}
+    <div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       >
-        {activeTask ? (
-          <div
-            className="w-64 bg-white border-2 border-primary rounded-lg p-2.5 shadow-2xl"
-            style={{
-              transform: "scale(1.05)",
-              boxShadow:
-                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-            }}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <Icon
-                icon="solar:move-linear"
-                className="text-primary text-base animate-pulse"
+        <div className="grid grid-cols-4 gap-3">
+          {taskStatuses.map((status) => {
+            const columnTasks = getTasksByStatus(status.task_status_id);
+
+            return (
+              <KanbanColumn
+                key={status.task_status_id}
+                status={status}
+                tasks={columnTasks}
+                onTaskClick={handleTaskClick}
               />
-              <h4 className="font-medium text-xs text-default-900">
-                {activeTask.title}
-              </h4>
+            );
+          })}
+        </div>
+
+        {/* Overlay per il drag */}
+        <DragOverlay
+          dropAnimation={{
+            duration: 200,
+            easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+          }}
+        >
+          {activeTask ? (
+            <div
+              className="w-64 bg-white border-2 border-primary rounded-lg p-2.5 shadow-2xl"
+              style={{
+                transform: "scale(1.05)",
+                boxShadow:
+                  "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Icon
+                  icon="solar:move-linear"
+                  className="text-primary text-base animate-pulse"
+                />
+                <h4 className="font-medium text-xs text-default-900">
+                  {activeTask.title}
+                </h4>
+              </div>
+              <p className="text-[10px] text-default-500 line-clamp-2">
+                {activeTask.description}
+              </p>
             </div>
-            <p className="text-[10px] text-default-500 line-clamp-2">
-              {activeTask.description}
-            </p>
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      {/* Modal Dettaglio Task */}
+      <Modal
+        isOpen={taskDetailOpen}
+        onClose={() => setTaskDetailOpen(false)}
+        size="2xl"
+      >
+        <ModalContent>
+          {selectedTask && (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <h3 className="text-lg font-semibold">{selectedTask.title}</h3>
+                <div className="flex items-center gap-2 mt-2">
+                  <Chip
+                    color={selectedTask.task_priority?.color as any}
+                    variant="flat"
+                    size="sm"
+                    className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                  >
+                    {selectedTask.task_priority?.name}
+                  </Chip>
+                  {selectedTask.story_points && (
+                    <Chip
+                      variant="flat"
+                      size="sm"
+                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                    >
+                      {selectedTask.story_points} SP
+                    </Chip>
+                  )}
+                </div>
+              </ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-semibold text-default-700 mb-2 block">
+                      Descrizione
+                    </label>
+                    <p className="text-sm text-default-600">
+                      {selectedTask.description}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-semibold text-default-700 mb-2 block">
+                        Status
+                      </label>
+                      <Chip
+                        color={selectedTask.task_status?.color as any}
+                        variant="flat"
+                        size="sm"
+                      >
+                        {selectedTask.task_status?.name}
+                      </Chip>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-semibold text-default-700 mb-2 block">
+                      Creato il
+                    </label>
+                    <p className="text-sm text-default-600">
+                      {new Date(selectedTask.created_at).toLocaleDateString(
+                        "it-IT",
+                        {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="light"
+                  onPress={() => setTaskDetailOpen(false)}
+                >
+                  Chiudi
+                </Button>
+                <Button color="primary">Modifica</Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+    </div>
   );
 }
