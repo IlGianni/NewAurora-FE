@@ -2,6 +2,7 @@ import { Button, Chip, Skeleton, Tab, Tabs } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import ProjectDetailTask from "../../components/Project/ProjectDetail/ProjectDetailTask";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -165,7 +166,9 @@ export default function ProjectDetail() {
               <span>Panoramica</span>
             </div>
           }
-        />
+        >
+          <h1>Panoramica</h1>
+        </Tab>
         <Tab
           key="tasks"
           title={
@@ -174,7 +177,9 @@ export default function ProjectDetail() {
               <span>Task</span>
             </div>
           }
-        />
+        >
+          <ProjectDetailTask unique_id={id || ""} />
+        </Tab>
         <Tab
           key="documents"
           title={
@@ -183,7 +188,9 @@ export default function ProjectDetail() {
               <span>Documenti</span>
             </div>
           }
-        />
+        >
+          <h1>Documenti</h1>
+        </Tab>
         <Tab
           key="team"
           title={
@@ -195,7 +202,23 @@ export default function ProjectDetail() {
               <span>Team</span>
             </div>
           }
-        />
+        >
+          <h1>Team</h1>
+        </Tab>
+        <Tab
+          key="vault"
+          title={
+            <div className="flex items-center gap-2">
+              <Icon
+                icon="solar:users-group-rounded-linear"
+                className="text-lg"
+              />
+              <span>Vault</span>
+            </div>
+          }
+        >
+          <h1>Vault</h1>
+        </Tab>
       </Tabs>
     </div>
   );
