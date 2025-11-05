@@ -28,7 +28,7 @@ export default function ProjectDetailTask({
   if (!project) {
     return (
       <div className="flex justify-center items-center h-84">
-        <Spinner />
+        <Spinner variant="wave" />
       </div>
     );
   }

@@ -78,23 +78,19 @@ export default function ProjectCard({
             </Chip>
 
             {/* Dropdown per modifiche rapide */}
-            <Dropdown showArrow>
-              <DropdownTrigger>
-                <Button
-                  variant="light"
-                  size="sm"
-                  onPress={(e: any) => e.stopPropagation()}
-                  isIconOnly
-                >
-                  <Icon icon="solar:settings-outline" className="w-5 h-5" />
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                aria-label="Modifica rapida progetto"
-                variant="flat"
+            <Dropdown>
+              <DropdownTrigger
+                variant="light"
+                size="sm"
+                className="min-w-5 w-5 h-5"
+                as={Button}
               >
+                <Icon icon="solar:settings-outline" className="text-lg" />
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Modifica rapida progetto">
                 <DropdownItem
                   key="edit"
+                  color="primary"
                   startContent={<Icon icon="solar:pen-outline" />}
                   onClick={() =>
                     navigate(`/projects/${project.unique_id}/edit`)
@@ -103,6 +99,7 @@ export default function ProjectCard({
                   Modifica Progetto
                 </DropdownItem>
                 <DropdownItem
+                  color="primary"
                   key="status"
                   startContent={<Icon icon="solar:chart-outline" />}
                 >
@@ -110,6 +107,7 @@ export default function ProjectCard({
                 </DropdownItem>
 
                 <DropdownItem
+                  color="primary"
                   key="priority"
                   startContent={<Icon icon="solar:flag-outline" />}
                 >
@@ -117,7 +115,7 @@ export default function ProjectCard({
                 </DropdownItem>
                 <DropdownItem
                   color="danger"
-                  key="edit"
+                  key="delete"
                   startContent={<Icon icon="fluent:delete-12-regular" />}
                   onClick={() => deleteProject(project.project_id)}
                 >

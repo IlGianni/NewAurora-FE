@@ -65,7 +65,7 @@ function KanbanColumn({
           <h3 className="font-bold text-xs text-default-900 flex-1 uppercase tracking-wide">
             {status.name}
           </h3>
-          <span className="text-xs font-semibold text-default-600 bg-white px-2 py-0.5 rounded-full">
+          <span className="text-xs font-semibold text-default-600 bg-default/10 px-2 py-0.5 rounded-full">
             {tasks.length}
           </span>
         </div>
@@ -85,7 +85,7 @@ function KanbanColumn({
           >
             {tasks.length === 0 ? (
               <div className="text-center py-10 text-default-400">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full mb-2 shadow-sm">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-default/10 rounded-full mb-2 shadow-sm">
                   <Icon
                     icon="solar:clipboard-linear"
                     className="text-2xl text-default-400"
