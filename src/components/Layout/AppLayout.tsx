@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Avatar, Button, Input, ScrollShadow, Spacer } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import { ProjectManagerIcon } from "./ProjectManagerIcon";
 import { sectionItems } from "./sidebar-items";
+import AgentPopup, { AgentToggleButton } from "./AgentPopup/AgentPopup";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -17,6 +18,8 @@ interface AppLayoutProps {
 export default function AppLayout({ children, isAuth }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isAgentOpen, setIsAgentOpen] = useState(false);
+  const [isAgentFullscreen, setIsAgentFullscreen] = useState(false);
 
   // Determina la chiave attiva basata sul pathname corrente
   const getActiveKey = () => {
@@ -51,7 +54,7 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
   };
 
   return (
-    <div className="h-screen flex py-4 pl-4">
+    <div className="h-screen flex py-4 pl-4 relative overflow-hidden">
       {/* Sidebar */}
       <div
         className="border-r-small border border-primary/20 relative flex h-full w-72 flex-col p-6 bg-default-50 rounded-2xl overflow-hidden"
@@ -140,11 +143,28 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-full overflow-y-scroll">
+      <div
+        className={`flex-1 flex flex-col h-full overflow-y-scroll transition-all duration-300 ${
+          isAgentOpen && !isAgentFullscreen ? "mr-96" : "mr-0"
+        }`}
+      >
         <main className={isAuth ? "flex-1 p-6" : "flex-1 bg-background"}>
           {children}
         </main>
       </div>
+
+      {/* Agent Popup */}
+      <AgentPopup
+        isOpen={isAgentOpen}
+        onClose={() => setIsAgentOpen(false)}
+        isFullscreen={isAgentFullscreen}
+        onFullscreenChange={setIsAgentFullscreen}
+      />
+
+      {/* Agent Toggle Button */}
+      {isAuth && !isAgentOpen && (
+        <AgentToggleButton onClick={() => setIsAgentOpen(true)} />
+      )}
     </div>
   );
 }
