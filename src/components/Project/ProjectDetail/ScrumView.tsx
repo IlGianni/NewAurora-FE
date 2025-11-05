@@ -28,10 +28,13 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
+  Select,
+  SelectItem,
   Tab,
   Tabs,
   Textarea,
   useDisclosure,
+  addToast,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import axios from "axios";
@@ -199,6 +202,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
   const [taskDetailOpen, setTaskDetailOpen] = useState(false);
   const [TaskStatuses, setTaskStatuses] = useState<TaskStatus[]>([]);
   const [TaskPriorities, setTaskPriorities] = useState<TaskPriority[]>([]);
+  const [update, setUpdate] = useState(false);
 
   useEffect(() => {
     axios
@@ -250,7 +254,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
           setBacklog(res.data.backlog);
         }
       });
-  }, [projectId]);
+  }, [projectId, update]);
 
   // Form state
   const [newTask, setNewTask] = useState({
@@ -259,6 +263,8 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
     task_status_id: 1,
     task_priority_id: 1,
     story_points: 0,
+    sprint_id: null as number | null,
+    project_id: projectId,
   });
 
   const [newSprint, setNewSprint] = useState({
@@ -269,6 +275,37 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
   });
 
   const handleCreateTask = () => {
+    axios
+      .post(`/project/POST/create-task`, { task_data: newTask })
+      .then((res) => {
+        if (res.status === 200) {
+          setNewTask({
+            title: "",
+            description: "",
+            task_status_id: 1,
+            task_priority_id: 1,
+            story_points: 0,
+            sprint_id: null as number | null,
+            project_id: projectId,
+          });
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Task creato con successo!",
+            description: "Il task è stato creato con successo",
+            color: "success",
+          });
+          setUpdate(!update);
+        } else {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Errore durante la creazione del task",
+            description: "Controlla i dati inseriti e riprova",
+            color: "danger",
+          });
+        }
+      });
     onClose();
   };
 
@@ -1003,41 +1040,26 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                         }
                       />
                       <div className="grid grid-cols-2 gap-4">
-                        <Dropdown>
-                          <DropdownTrigger>
-                            <Button
-                              variant="bordered"
-                              className="justify-start"
-                            >
-                              Priorità :{" "}
-                              {
-                                TaskPriorities.find(
-                                  (p) =>
-                                    p.task_priority_id ===
-                                    newTask.task_priority_id
-                                )?.name
-                              }
-                            </Button>
-                          </DropdownTrigger>
-                          <DropdownMenu
-                            selectedKeys={[newTask.task_priority_id]}
-                            onSelectionChange={(keys) => {
-                              const selected =
-                                Array.from(keys)[0 as Task["task_priority_id"]];
-                              setNewTask({
-                                ...newTask,
-                                task_priority_id:
-                                  selected as Task["task_priority_id"],
-                              });
-                            }}
-                          >
-                            {TaskPriorities.map((p) => (
-                              <DropdownItem key={p.task_priority_id}>
-                                {p.name}
-                              </DropdownItem>
-                            ))}
-                          </DropdownMenu>
-                        </Dropdown>
+                        <Select
+                          className="max-w-xs"
+                          label="Priorità"
+                          placeholder="Seleziona una priorità"
+                          selectedKeys={[newTask.task_priority_id.toString()]}
+                          onSelectionChange={(keys) => {
+                            const selected = Array.from(keys)[0] as string;
+                            setNewTask({
+                              ...newTask,
+                              task_priority_id: parseInt(selected),
+                            });
+                          }}
+                        >
+                          {TaskPriorities.map((priority) => (
+                            <SelectItem key={priority.task_priority_id}>
+                              {priority.name.charAt(0).toUpperCase() +
+                                priority.name.slice(1)}
+                            </SelectItem>
+                          ))}
+                        </Select>
                         <Input
                           type="number"
                           label="Story Points"
@@ -1051,6 +1073,31 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                           }
                         />
                       </div>
+                      <Select
+                        label="Sprint/Backlog"
+                        placeholder="Seleziona uno sprint o backlog"
+                        selectedKeys={[
+                          newTask.sprint_id?.toString() || "Backlog",
+                        ]}
+                        onSelectionChange={(keys) => {
+                          const selected = Array.from(keys)[0] as string;
+                          setNewTask({
+                            ...newTask,
+                            sprint_id:
+                              selected === "null" ? null : parseInt(selected),
+                          });
+                        }}
+                      >
+                        <>
+                          {sprints.map((sprint) => (
+                            <SelectItem key={sprint.sprint_id}>
+                              {sprint.name.charAt(0).toUpperCase() +
+                                sprint.name.slice(1)}
+                            </SelectItem>
+                          ))}
+                          <SelectItem key="backlog">Backlog</SelectItem>
+                        </>
+                      </Select>
                     </div>
                   </ModalBody>
                   <ModalFooter>
