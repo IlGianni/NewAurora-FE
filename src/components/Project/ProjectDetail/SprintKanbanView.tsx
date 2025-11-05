@@ -141,7 +141,7 @@ function SortableTaskCard({
   return (
     <div ref={setNodeRef} style={style} className="group">
       <div
-        className="mb-2 bg-white border border-default-200 rounded-lg hover:border-primary-200 hover:shadow-sm transition-all duration-200 overflow-hidden"
+        className="mb-2 bg-default/10 border border-default-50 rounded-lg hover:border-primary-200 hover:shadow-sm transition-all duration-200 overflow-hidden"
         style={{
           cursor: isDragging ? "grabbing" : "default",
         }}
@@ -333,7 +333,7 @@ export default function SprintKanbanView({
         >
           {activeTask ? (
             <div
-              className="w-64 bg-white border-2 border-primary rounded-lg p-2.5 shadow-2xl"
+              className="w-64 bg-default/10 border border-default-50 rounded-lg p-2.5 shadow-2xl"
               style={{
                 transform: "scale(1.05)",
                 boxShadow:

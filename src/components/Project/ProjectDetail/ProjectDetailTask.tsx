@@ -73,7 +73,7 @@ export default function ProjectDetailTask({
         </div>
 
         {/* Descrizione metodologia selezionata */}
-        <div className="mt-4 p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-default-200/50">
+        <div className="mt-4 p-4 bg-default/10 backdrop-blur-sm rounded-xl border border-default-200/50">
           {methodology === "scrum" ? (
             <div className="flex gap-3">
               <Icon

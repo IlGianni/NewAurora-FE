@@ -80,13 +80,13 @@ function SortableTaskCard({
       style={style}
       className="group mb-2 hover:cursor-pointer"
     >
-      <div className="bg-white border border-default-200 rounded-xl p-3 hover:border-default-300 hover:shadow-sm transition-all duration-200">
+      <div className="bg-default/10 border border-default-50 rounded-xl p-3 hover:border-default-300 hover:shadow-sm transition-all duration-200">
         <div className="flex items-start gap-2">
           {/* Drag Handle */}
           <div
             {...attributes}
             {...listeners}
-            className="flex-shrink-0 cursor-grab active:cursor-grabbing pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="flex-shrink-0 cursor-grab active:cursor-grabbing pt-0.5 transition-opacity"
           >
             <Icon
               icon="solar:hamburger-menu-linear"
@@ -186,7 +186,7 @@ function KanbanColumnCard({
                 {column.name}
               </h3>
               <div className="flex items-center gap-2 text-xs text-default-500 mt-1">
-                <span className="font-semibold bg-white px-2 py-0.5 rounded-full">
+                <span className="font-semibold bg-default/10 px-2 py-0.5 rounded-full text-primary">
                   {column.tasks.length} task
                 </span>
               </div>
@@ -198,7 +198,7 @@ function KanbanColumnCard({
                 isIconOnly
                 variant="flat"
                 size="sm"
-                className="min-w-7 w-7 h-7 hover:bg-default-200"
+                className="min-w-7 w-7 h-7"
                 title="Opzioni colonna"
               >
                 <Icon icon="solar:menu-dots-bold" className="text-base" />
