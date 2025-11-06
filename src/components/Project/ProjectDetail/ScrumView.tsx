@@ -55,11 +55,13 @@ function SortableTask({
   onTaskClick,
   onMoveTask,
   availableSprints,
+  handleDeleteTask,
 }: {
   task: Task;
   onTaskClick: (task: Task) => void;
   onMoveTask: (taskId: number, targetSprintId: number | null) => void;
   availableSprints: Sprint[];
+  handleDeleteTask: (taskId: number) => void;
 }) {
   const {
     attributes,
@@ -168,14 +170,6 @@ function SortableTask({
                   >
                     Visualizza dettagli
                   </DropdownItem>
-                  <DropdownItem
-                    color="primary"
-                    key="backlog"
-                    onPress={() => onMoveTask(task.task_id, null)}
-                    startContent={<Icon icon="solar:clipboard-list-linear" />}
-                  >
-                    Sposta nel Backlog
-                  </DropdownItem>
                   <>
                     {availableSprints.map((sprint: Sprint) => (
                       <DropdownItem
@@ -189,12 +183,25 @@ function SortableTask({
                         Sposta in {sprint.name}
                       </DropdownItem>
                     ))}
+                    {task.sprint_id !== null && (
+                      <DropdownItem
+                        color="primary"
+                        key="backlog"
+                        onPress={() => onMoveTask(task.task_id, null)}
+                        startContent={
+                          <Icon icon="solar:clipboard-list-linear" />
+                        }
+                      >
+                        Sposta nel Backlog
+                      </DropdownItem>
+                    )}
                   </>
                   <DropdownItem
                     key="delete-task"
                     className="text-danger"
                     color="danger"
                     startContent={<Icon icon="solar:trash-bin-trash-linear" />}
+                    onPress={() => handleDeleteTask(task.task_id)}
                   >
                     Elimina Task
                   </DropdownItem>
@@ -382,6 +389,78 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
     onClose();
   };
 
+  const handleDeleteSprint = (sprintId: number) => {
+    axios
+      .delete(`/project/DELETE/delete-sprint`, {
+        params: { sprint_id: sprintId },
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Sprint eliminato con successo!",
+            description: "Il sprint è stato eliminato con successo",
+            color: "success",
+          });
+          setUpdate(!update);
+        } else {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Errore durante l'eliminazione del sprint",
+            description: "Controlla i dati inseriti e riprova",
+            color: "danger",
+          });
+        }
+      })
+      .catch(() => {
+        addToast({
+          timeout: 3000,
+          shouldShowTimeoutProgress: true,
+          title: "Errore durante l'eliminazione del sprint",
+          description: "Controlla i dati inseriti e riprova",
+          color: "danger",
+        });
+      });
+  };
+
+  const handleDeleteTask = (taskId: number) => {
+    axios
+      .delete(`/project/DELETE/delete-task`, {
+        params: { task_id: taskId },
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Task eliminato con successo!",
+            description: "Il task è stato eliminato con successo",
+            color: "success",
+          });
+          setUpdate(!update);
+        } else {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Errore durante l'eliminazione del task",
+            description: "Controlla i dati inseriti e riprova",
+            color: "danger",
+          });
+        }
+      })
+      .catch(() => {
+        addToast({
+          timeout: 3000,
+          shouldShowTimeoutProgress: true,
+          title: "Errore durante l'eliminazione del task",
+          description: "Controlla i dati inseriti e riprova",
+          color: "danger",
+        });
+      });
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
 
@@ -550,7 +629,6 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
   };
 
   const handleCompleteSprint = async () => {
-    console.log("activeSprint", activeSprint);
     if (activeSprint) {
       await axios
         .put(`/project/UPDATE/complete-sprint`, {
@@ -620,8 +698,6 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
     // Se la destinazione è la stessa della sorgente, non fare nulla
     if (sourceSprintId === targetSprintId) return;
 
-    console.log(taskId, targetSprintId);
-
     await axios
       .put(`/project/UPDATE/move-task`, {
         task_id: taskId,
@@ -657,8 +733,6 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
         });
       });
   };
-
-  console.log(loading);
 
   if (loading != 0) {
     return (
@@ -742,11 +816,11 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
 
                   {/* Sprint Attivo */}
                   {sprints.filter((s) => s.is_active).length === 0 ? (
-                    <div className="bg-gradient-to-br from-default-50 to-default-100 border-2 border-dashed border-default-300 rounded-xl p-8 text-center">
+                    <div className="border-2 border-dashed border-primary-300 rounded-xl p-8 text-center">
                       <div className="inline-flex items-center justify-center w-16 h-16 bg-default/10 rounded-full mb-4 shadow-sm">
                         <Icon
                           icon="solar:rocket-linear"
-                          className="text-3xl text-default-400"
+                          className="text-3xl text-primary-400"
                         />
                       </div>
                       <h4 className="font-semibold text-default-700 mb-1">
@@ -860,6 +934,9 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                   startContent={
                                     <Icon icon="solar:trash-bin-trash-linear" />
                                   }
+                                  onPress={() =>
+                                    handleDeleteSprint(sprint.sprint_id)
+                                  }
                                 >
                                   Elimina Sprint
                                 </DropdownItem>
@@ -885,6 +962,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                     availableSprints={sprints.filter(
                                       (s) => s.sprint_id !== sprint.sprint_id
                                     )}
+                                    handleDeleteTask={handleDeleteTask}
                                   />
                                 ))
                               )}
@@ -995,6 +1073,9 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                   startContent={
                                     <Icon icon="solar:trash-bin-trash-linear" />
                                   }
+                                  onPress={() =>
+                                    handleDeleteSprint(sprint.sprint_id)
+                                  }
                                 >
                                   Elimina Sprint
                                 </DropdownItem>
@@ -1021,6 +1102,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                   availableSprints={sprints.filter(
                                     (s) => s.sprint_id !== sprint.sprint_id
                                   )}
+                                  handleDeleteTask={handleDeleteTask}
                                 />
                               ))
                             )}
@@ -1102,6 +1184,9 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                   startContent={
                                     <Icon icon="solar:trash-bin-trash-linear" />
                                   }
+                                  onPress={() =>
+                                    handleDeleteSprint(sprint.sprint_id)
+                                  }
                                 >
                                   Elimina Sprint
                                 </DropdownItem>
@@ -1128,6 +1213,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                   availableSprints={sprints.filter(
                                     (s) => s.sprint_id !== sprint.sprint_id
                                   )}
+                                  handleDeleteTask={handleDeleteTask}
                                 />
                               ))
                             )}
@@ -1181,6 +1267,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                             onTaskClick={handleTaskClick}
                             onMoveTask={handleMoveTask}
                             availableSprints={sprints}
+                            handleDeleteTask={handleDeleteTask}
                           />
                         ))
                       )}
