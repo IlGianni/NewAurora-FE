@@ -290,7 +290,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
 
   const [newSprint, setNewSprint] = useState({
     name: "",
-    goal: "",
+    description: "",
     start_date: new Date("2025-11-05").toISOString().split("T")[0],
     end_date: new Date("2025-11-05").toISOString().split("T")[0],
     project_id: projectId,
@@ -347,7 +347,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
         if (res.status === 200) {
           setNewSprint({
             name: "",
-            goal: "",
+            description: "",
             start_date: new Date("2025-11-05").toISOString().split("T")[0],
             end_date: new Date("2025-11-05").toISOString().split("T")[0],
             project_id: projectId,
@@ -549,15 +549,42 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
       });
   };
 
-  const handleCompleteSprint = () => {
+  const handleCompleteSprint = async () => {
+    console.log("activeSprint", activeSprint);
     if (activeSprint) {
-      setSprints((prev) =>
-        prev.map((s) =>
-          s.sprint_id === activeSprint.sprint_id
-            ? { ...s, is_active: false as const }
-            : s
-        )
-      );
+      await axios
+        .put(`/project/UPDATE/complete-sprint`, {
+          sprint_id: activeSprint.sprint_id,
+        })
+        .then((res) => {
+          if (res.status === 200) {
+            addToast({
+              timeout: 3000,
+              shouldShowTimeoutProgress: true,
+              title: "Sprint completato con successo!",
+              description: "Il sprint è stato completato con successo",
+              color: "success",
+            });
+            setUpdate(!update);
+          } else {
+            addToast({
+              timeout: 3000,
+              shouldShowTimeoutProgress: true,
+              title: "Errore durante la completa del sprint",
+              description: "Controlla i dati inseriti e riprova",
+              color: "danger",
+            });
+          }
+        })
+        .catch(() => {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Errore durante la completa del sprint",
+            description: "Controlla i dati inseriti e riprova",
+            color: "danger",
+          });
+        });
     }
   };
 
@@ -743,7 +770,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                 <h4 className="text-base font-semibold text-default-900">
                                   {sprint.name}
                                 </h4>
-                                <span className="text-[10px] font-medium px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+                                <span className="text-[10px] font-medium px-2 py-0.5 bg-danger-100 text-primary rounded-full">
                                   Attivo
                                 </span>
                               </div>
@@ -807,16 +834,32 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                 </Button>
                               </DropdownTrigger>
                               <DropdownMenu>
-                                <DropdownItem key="edit" color="primary">
+                                <DropdownItem
+                                  key="edit"
+                                  color="primary"
+                                  startContent={
+                                    <Icon icon="solar:pen-linear" />
+                                  }
+                                >
                                   Modifica Sprint
                                 </DropdownItem>
-                                <DropdownItem key="complete" color="primary">
+                                <DropdownItem
+                                  key="complete"
+                                  color="primary"
+                                  startContent={
+                                    <Icon icon="solar:check-read-linear" />
+                                  }
+                                  onPress={() => handleCompleteSprint()}
+                                >
                                   Completa Sprint
                                 </DropdownItem>
                                 <DropdownItem
                                   key="delete"
                                   className="text-danger"
                                   color="danger"
+                                  startContent={
+                                    <Icon icon="solar:trash-bin-trash-linear" />
+                                  }
                                 >
                                   Elimina Sprint
                                 </DropdownItem>
@@ -853,7 +896,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
 
                   {/* Sprint Pianificati */}
                   {sprints
-                    .filter((s) => !s.is_active)
+                    .filter((s) => !s.is_active && !s.is_completed)
                     .map((sprint) => (
                       <div
                         key={sprint.sprint_id}
@@ -936,13 +979,129 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                 </Button>
                               </DropdownTrigger>
                               <DropdownMenu>
-                                <DropdownItem key="edit" color="primary">
+                                <DropdownItem
+                                  key="edit"
+                                  color="primary"
+                                  startContent={
+                                    <Icon icon="solar:pen-linear" />
+                                  }
+                                >
                                   Modifica Sprint
                                 </DropdownItem>
                                 <DropdownItem
                                   key="delete"
                                   className="text-danger"
                                   color="danger"
+                                  startContent={
+                                    <Icon icon="solar:trash-bin-trash-linear" />
+                                  }
+                                >
+                                  Elimina Sprint
+                                </DropdownItem>
+                              </DropdownMenu>
+                            </Dropdown>
+                          </div>
+                        </div>
+                        <div className="pt-2">
+                          <SortableContext
+                            items={sprint.tasks.map((t) => t.task_id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {sprint.tasks.length === 0 ? (
+                              <div className="text-center py-8 text-xs text-default-400">
+                                Nessun task nello sprint
+                              </div>
+                            ) : (
+                              sprint.tasks.map((task) => (
+                                <SortableTask
+                                  key={task.task_id}
+                                  task={task}
+                                  onTaskClick={handleTaskClick}
+                                  onMoveTask={handleMoveTask}
+                                  availableSprints={sprints.filter(
+                                    (s) => s.sprint_id !== sprint.sprint_id
+                                  )}
+                                />
+                              ))
+                            )}
+                          </SortableContext>
+                        </div>
+                      </div>
+                    ))}
+
+                  {/* Sprint Completati */}
+                  {sprints
+                    .filter((s) => s.is_completed)
+                    .map((sprint) => (
+                      <div
+                        key={sprint.sprint_id}
+                        className="bg-default-300/10 border border-default-100/50 rounded-2xl p-5 opacity-50"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="text-base font-semibold text-default-900">
+                                {sprint.name}
+                              </h4>
+                              <span className="text-[10px] font-medium px-2 py-0.5 bg-success-100 text-primary rounded-full">
+                                Completato
+                              </span>
+                            </div>
+                            <p className="text-xs text-default-600 mb-3">
+                              {sprint.description}
+                            </p>
+                            <div className="flex items-center gap-3 text-[11px] text-default-500">
+                              <span className="flex items-center gap-1">
+                                <Icon
+                                  icon="solar:calendar-linear"
+                                  className="text-sm"
+                                />
+                                {new Date(
+                                  sprint.completed_at as string
+                                ).toLocaleDateString("it-IT", {
+                                  day: "numeric",
+                                  month: "short",
+                                })}{" "}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Icon
+                                  icon="solar:chart-linear"
+                                  className="text-sm"
+                                />
+                                {getTotalStoryPoints(sprint.tasks)} SP
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Icon
+                                  icon="solar:checklist-minimalistic-linear"
+                                  className="text-sm"
+                                />
+                                {sprint.tasks.length} tasks
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Dropdown>
+                              <DropdownTrigger>
+                                <Button
+                                  isIconOnly
+                                  variant="light"
+                                  size="sm"
+                                  className="min-w-8 w-8 h-8"
+                                >
+                                  <Icon
+                                    icon="solar:menu-dots-linear"
+                                    className="text-lg"
+                                  />
+                                </Button>
+                              </DropdownTrigger>
+                              <DropdownMenu>
+                                <DropdownItem
+                                  key="delete"
+                                  className="text-danger"
+                                  color="danger"
+                                  startContent={
+                                    <Icon icon="solar:trash-bin-trash-linear" />
+                                  }
                                 >
                                   Elimina Sprint
                                 </DropdownItem>
@@ -1238,9 +1397,12 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                         <Textarea
                           label="Obiettivo Sprint"
                           placeholder="Descrivi l'obiettivo principale..."
-                          value={newSprint.goal}
+                          value={newSprint.description}
                           onChange={(e) =>
-                            setNewSprint({ ...newSprint, goal: e.target.value })
+                            setNewSprint({
+                              ...newSprint,
+                              description: e.target.value,
+                            })
                           }
                         />
                         <div className="grid grid-cols-2 gap-4">

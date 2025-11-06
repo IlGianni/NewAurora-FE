@@ -154,7 +154,8 @@ export default function ProjectDetail() {
         variant="bordered"
         color="primary"
         classNames={{
-          tabList: "bg-white border border-default-200 rounded-3xl p-2",
+          tabList:
+            "bg-white border border-default-200 rounded-3xl p-2 overflow-hidden",
           cursor: "w-full rounded-3xl",
         }}
       >

@@ -112,7 +112,9 @@ export interface Sprint {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  is_completed: boolean;
   project_id: number;
+  completed_at?: string;
   created_by_id: number;
   created_at: string;
   updated_at: string;
