@@ -298,8 +298,8 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
   const [newSprint, setNewSprint] = useState({
     name: "",
     description: "",
-    start_date: new Date("2025-11-05").toISOString().split("T")[0],
-    end_date: new Date("2025-11-05").toISOString().split("T")[0],
+    start_date: new Date().toISOString().split("T")[0],
+    end_date: new Date().toISOString().split("T")[0],
     project_id: projectId,
   });
 
@@ -1494,6 +1494,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                         />
                         <div className="grid grid-cols-2 gap-4">
                           <DatePicker
+                            className="cursor-pointer"
                             label="Data Inizio"
                             value={parseDate(newSprint.start_date) as any}
                             onChange={(e) => {
@@ -1624,9 +1625,6 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                           <h3 className="text-lg font-semibold text-default-900">
                             {activeSprint.name}
                           </h3>
-                          <span className="text-[10px] font-medium px-2 py-0.5 bg-primary/10 text-primary rounded-full">
-                            Attivo
-                          </span>
                         </div>
                         <p className="text-xs text-default-600 mb-3">
                           {activeSprint.description}
