@@ -207,7 +207,11 @@ export default function AuthPage() {
                 <Checkbox name="remember" size="sm">
                   Ricordami
                 </Checkbox>
-                <Link className="text-default-500" href="#" size="sm">
+                <Link 
+                  className="text-default-500" 
+                  href="/forgot-password" 
+                  size="sm"
+                >
                   Password dimenticata?
                 </Link>
               </div>

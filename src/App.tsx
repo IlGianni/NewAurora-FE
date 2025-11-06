@@ -1,4 +1,5 @@
 import AuthPage from "./pages/authentication/AuthPage";
+import ForgotPassword from "./pages/authentication/ForgotPassword";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Settings from "./pages/settings/Settings";
 import Projects from "./pages/projects/Projects";
@@ -62,6 +63,7 @@ function App() {
         {!isAuth ? (
           <>
             <Route path="/" element={<AuthPage />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
         ) : (
