@@ -658,7 +658,6 @@ export default function ProjectFeatureFlags() {
             <Button
               onClick={toggleMultiSelectMode}
               variant="light"
-              size="sm"
               startContent={<Icon icon="lucide:x" width={16} />}
             >
               Annulla Selezione
@@ -668,7 +667,6 @@ export default function ProjectFeatureFlags() {
               <Button
                 onClick={toggleMultiSelectMode}
                 variant="light"
-                size="sm"
                 startContent={<Icon icon="lucide:check-square" width={16} />}
               >
                 Seleziona
@@ -677,7 +675,6 @@ export default function ProjectFeatureFlags() {
                 onClick={addUngroupedFlag}
                 variant="solid"
                 color="primary"
-                size="sm"
                 startContent={<Icon icon="lucide:flag" width={16} />}
               >
                 Nuova Flag
@@ -686,7 +683,6 @@ export default function ProjectFeatureFlags() {
                 onClick={() => openGroupModal()}
                 variant="solid"
                 color="primary"
-                size="sm"
                 startContent={<Icon icon="lucide:plus" width={16} />}
               >
                 Nuovo Gruppo
@@ -710,10 +706,10 @@ export default function ProjectFeatureFlags() {
                   {selectedFlags.length !== 1 ? "e" : ""}
                 </span>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="light" onPress={selectAllFlags}>
+                  <Button variant="light" onPress={selectAllFlags}>
                     Seleziona Tutte
                   </Button>
-                  <Button size="sm" variant="light" onPress={deselectAllFlags}>
+                  <Button variant="light" onPress={deselectAllFlags}>
                     Deseleziona
                   </Button>
                 </div>
@@ -789,7 +785,6 @@ export default function ProjectFeatureFlags() {
                       </Select>
                       {bulkActionTargetGroup && (
                         <Button
-                          size="sm"
                           color="primary"
                           onPress={() => handleBulkAction("move")}
                           startContent={<Icon icon="lucide:check" width={14} />}
@@ -798,7 +793,6 @@ export default function ProjectFeatureFlags() {
                         </Button>
                       )}
                       <Button
-                        size="sm"
                         variant="light"
                         isIconOnly
                         onPress={() => {
@@ -822,7 +816,6 @@ export default function ProjectFeatureFlags() {
                         }
                       }}
                       variant="bordered"
-                      size="sm"
                       className="w-full sm:w-40"
                     >
                       <SelectItem
@@ -896,25 +889,6 @@ export default function ProjectFeatureFlags() {
       <div className="space-y-3">
         {ungroupedFlags.length > 0 && (
           <>
-            {/* Titolo sezione */}
-            {!multiSelectMode && (
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Icon
-                    icon="lucide:flag"
-                    width={20}
-                    className="text-default-600"
-                  />
-                  <h3 className="text-lg font-semibold text-default-900">
-                    Feature Flags Senza Gruppo
-                  </h3>
-                  <Chip size="sm" variant="flat" color="default">
-                    {ungroupedFlags.length}
-                  </Chip>
-                </div>
-              </div>
-            )}
-
             <div className="flex flex-col gap-5">
               {ungroupedFlags.map((flag) => (
                 <Card
@@ -923,34 +897,7 @@ export default function ProjectFeatureFlags() {
                   shadow="none"
                 >
                   <CardBody className="p-4 space-y-3">
-                    {/* Bottoni modifica ed elimina in alto a destra */}
-                    {!multiSelectMode && (
-                      <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          onPress={() => openEditPage(null, flag)}
-                        >
-                          <Icon icon="lucide:edit-3" width={16} />
-                        </Button>
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          color="danger"
-                          onPress={() => deleteFlag(null, flag.id)}
-                        >
-                          <Icon icon="lucide:trash-2" width={16} />
-                        </Button>
-                      </div>
-                    )}
-
-                    <div
-                      className={`flex items-center justify-between gap-4 ${
-                        multiSelectMode ? "" : "pr-16"
-                      }`}
-                    >
+                    <div className="flex items-center justify-between gap-4">
                       {/* Checkbox quando modalità selezione multipla è attiva */}
                       {multiSelectMode && (
                         <div className="flex-shrink-0">
@@ -966,12 +913,18 @@ export default function ProjectFeatureFlags() {
                       {/* Sezione principale con nome e descrizione */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{
+                              backgroundColor: flag.enabled ? "green" : "red",
+                            }}
+                          />
+
                           <h4 className="text-base font-semibold text-default-900 truncate">
                             {flag.name}
                           </h4>
                           <Chip
-                            size="sm"
-                            variant="flat"
+                            variant="bordered"
                             className="font-mono text-xs"
                             color="default"
                           >
@@ -985,16 +938,29 @@ export default function ProjectFeatureFlags() {
 
                       {/* Switch per enable/disable */}
                       <div className="flex flex-col items-end gap-3">
-                        <Chip
-                          size="sm"
-                          variant="flat"
-                          color={flag.enabled ? "success" : "default"}
-                        >
-                          {flag.enabled ? "Attiva" : "Disattiva"}
-                        </Chip>
+                        {/* Bottoni modifica ed elimina in alto a destra */}
+                        {!multiSelectMode && (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              isIconOnly
+                              variant="light"
+                              color="primary"
+                              onPress={() => openEditPage(null, flag)}
+                            >
+                              <Icon icon="lucide:edit-3" width={16} />
+                            </Button>
+                            <Button
+                              isIconOnly
+                              variant="light"
+                              color="danger"
+                              onPress={() => deleteFlag(null, flag.id)}
+                            >
+                              <Icon icon="lucide:trash-2" width={16} />
+                            </Button>
+                          </div>
+                        )}
                         <Switch
-                          size="sm"
-                          color="primary"
+                          color="success"
                           isSelected={flag.enabled}
                           onValueChange={() => {
                             toggleFlag(null, flag.id);
@@ -1052,7 +1018,7 @@ export default function ProjectFeatureFlags() {
                                     )}
                                   </div>
                                   <Switch
-                                    size="sm"
+                                    color="success"
                                     isSelected={target.flagValue}
                                     isDisabled={!flag.enabled}
                                     onValueChange={() => {
@@ -1093,7 +1059,6 @@ export default function ProjectFeatureFlags() {
               onClick={() => openGroupModal()}
               variant="solid"
               color="primary"
-              size="sm"
               startContent={<Icon icon="lucide:plus" width={16} />}
             >
               Crea Primo Gruppo
@@ -1173,7 +1138,6 @@ export default function ProjectFeatureFlags() {
                         onClick={() => addFlagToGroup(group.id)}
                         variant="solid"
                         color="primary"
-                        size="sm"
                         startContent={<Icon icon="lucide:plus" width={14} />}
                       >
                         Aggiungi Feature Flag
@@ -1188,34 +1152,7 @@ export default function ProjectFeatureFlags() {
                           shadow="none"
                         >
                           <CardBody className="p-4 space-y-3">
-                            {/* Bottoni modifica ed elimina in alto a destra */}
-                            {!multiSelectMode && (
-                              <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="light"
-                                  onPress={() => openEditPage(group.id, flag)}
-                                >
-                                  <Icon icon="lucide:edit-3" width={16} />
-                                </Button>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="light"
-                                  color="danger"
-                                  onPress={() => deleteFlag(group.id, flag.id)}
-                                >
-                                  <Icon icon="lucide:trash-2" width={16} />
-                                </Button>
-                              </div>
-                            )}
-
-                            <div
-                              className={`flex items-center justify-between gap-4 ${
-                                multiSelectMode ? "" : "pr-16"
-                              }`}
-                            >
+                            <div className="flex items-center justify-between gap-4">
                               {/* Checkbox quando modalità selezione multipla è attiva */}
                               {multiSelectMode && (
                                 <div className="flex-shrink-0">
@@ -1234,12 +1171,20 @@ export default function ProjectFeatureFlags() {
                               {/* Sezione principale con nome e descrizione */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
+                                  <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{
+                                      backgroundColor: flag.enabled
+                                        ? "green"
+                                        : "red",
+                                    }}
+                                  />
+
                                   <h4 className="text-base font-semibold text-default-900 truncate">
                                     {flag.name}
                                   </h4>
                                   <Chip
-                                    size="sm"
-                                    variant="flat"
+                                    variant="bordered"
                                     className="font-mono text-xs"
                                     color="default"
                                   >
@@ -1253,16 +1198,33 @@ export default function ProjectFeatureFlags() {
 
                               {/* Switch per enable/disable */}
                               <div className="flex flex-col items-end gap-3">
-                                <Chip
-                                  size="sm"
-                                  variant="flat"
-                                  color={flag.enabled ? "success" : "default"}
-                                >
-                                  {flag.enabled ? "Attiva" : "Disattiva"}
-                                </Chip>
+                                {/* Bottoni modifica ed elimina in alto a destra */}
+                                {!multiSelectMode && (
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      isIconOnly
+                                      variant="light"
+                                      color="primary"
+                                      onPress={() =>
+                                        openEditPage(group.id, flag)
+                                      }
+                                    >
+                                      <Icon icon="lucide:edit-3" width={16} />
+                                    </Button>
+                                    <Button
+                                      isIconOnly
+                                      variant="light"
+                                      color="danger"
+                                      onPress={() =>
+                                        deleteFlag(group.id, flag.id)
+                                      }
+                                    >
+                                      <Icon icon="lucide:trash-2" width={16} />
+                                    </Button>
+                                  </div>
+                                )}
                                 <Switch
-                                  size="sm"
-                                  color="primary"
+                                  color="success"
                                   isSelected={flag.enabled}
                                   onValueChange={() => {
                                     toggleFlag(group.id, flag.id);
@@ -1320,7 +1282,7 @@ export default function ProjectFeatureFlags() {
                                             )}
                                           </div>
                                           <Switch
-                                            size="sm"
+                                            color="success"
                                             isSelected={target.flagValue}
                                             isDisabled={!flag.enabled}
                                             onValueChange={() => {
@@ -1346,7 +1308,6 @@ export default function ProjectFeatureFlags() {
                         onClick={() => addFlagToGroup(group.id)}
                         variant="solid"
                         color="primary"
-                        size="sm"
                         startContent={<Icon icon="lucide:plus" width={14} />}
                         className="w-fit"
                       >

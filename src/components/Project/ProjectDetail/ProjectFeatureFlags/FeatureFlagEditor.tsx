@@ -11,7 +11,6 @@ import {
   Select,
   SelectItem,
   Chip,
-  Divider,
   Switch,
 } from "@heroui/react";
 
@@ -227,29 +226,42 @@ export default function FeatureFlagEditor({
   return (
     <div className="h-full w-full flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pb-4 border-b border-default-200">
         <div className="flex items-center gap-3">
-          <Button isIconOnly variant="light" onPress={onClose} size="sm">
+          <Button
+            isIconOnly
+            variant="light"
+            onPress={onClose}
+            className="min-w-8 w-8 h-8"
+          >
             <Icon icon="lucide:arrow-left" width={18} />
           </Button>
-          <div
-            className={`w-2 h-2 rounded-full ${
-              localEnabled ? "bg-green-500" : "bg-gray-400"
-            }`}
-          />
-          <h1 className="text-lg font-semibold text-default-900">
-            {selectedFlag.flag.name}
-          </h1>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{
+                backgroundColor: localEnabled ? "green" : "red",
+              }}
+            />
+            <h1 className="text-xl font-semibold text-default-900">
+              {editFlagName || selectedFlag.flag.name}
+            </h1>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button color="default" variant="light" onPress={onClose} size="sm">
+          <Button
+            color="default"
+            variant="light"
+            onPress={onClose}
+            className="min-w-20"
+          >
             Annulla
           </Button>
           <Button
             color="primary"
             onPress={handleSave}
             isDisabled={!editFlagName.trim()}
-            size="sm"
+            className="min-w-24"
           >
             Salva
           </Button>
@@ -257,55 +269,103 @@ export default function FeatureFlagEditor({
       </div>
 
       {/* Informazioni base */}
-      <div className="space-y-4">
-        <Input
-          label="Nome"
-          variant="bordered"
-          size="sm"
-          type="text"
-          value={editFlagName}
-          onChange={(e) => setEditFlagName(e.target.value)}
-        />
-        <Input
-          label="Chiave"
-          variant="bordered"
-          size="sm"
-          type="text"
-          value={editFlagKey}
-          onChange={(e) => setEditFlagKey(e.target.value)}
-        />
-        <Textarea
-          label="Descrizione"
-          variant="bordered"
-          size="sm"
-          value={editFlagDescription}
-          onChange={(e) => setEditFlagDescription(e.target.value)}
-          placeholder="Breve descrizione..."
-        />
-        <div className="flex items-center justify-between p-3 rounded-lg border border-default-200">
-          <div className="flex items-center gap-2">
-            <Icon
-              icon="lucide:shield-check"
-              width={16}
-              className="text-default-600"
+      <Card shadow="none" className="border border-default-200">
+        <CardBody className="gap-4 p-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Nome"
+              variant="bordered"
+              type="text"
+              value={editFlagName}
+              onChange={(e) => setEditFlagName(e.target.value)}
+              classNames={{
+                input: "text-sm",
+                label: "text-xs",
+              }}
             />
-            <div>
-              <p className="text-sm font-medium text-default-900">
-                Valore Default
-              </p>
-              <p className="text-xs text-default-500">
-                Valore ritornato se nessun target matcha
-              </p>
+            <Input
+              label="Chiave"
+              variant="bordered"
+              type="text"
+              value={editFlagKey}
+              onChange={(e) => setEditFlagKey(e.target.value)}
+              classNames={{
+                input: "text-sm font-mono",
+                label: "text-xs",
+              }}
+            />
+          </div>
+          <Textarea
+            label="Descrizione"
+            variant="bordered"
+            value={editFlagDescription}
+            onChange={(e) => setEditFlagDescription(e.target.value)}
+            placeholder="Breve descrizione della feature flag..."
+            minRows={2}
+            classNames={{
+              input: "text-sm",
+              label: "text-xs",
+            }}
+          />
+          <div
+            className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
+              defaultRule
+                ? "bg-success-50 border-success-200 hover:border-success-300"
+                : "bg-default-50 border-default-200 hover:border-default-300"
+            }`}
+          >
+            <div className="flex items-center gap-4 flex-1">
+              <div
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  defaultRule ? "bg-success-100 shadow-sm" : "bg-default-100"
+                }`}
+              >
+                <Icon
+                  icon="lucide:shield-check"
+                  width={16}
+                  className={
+                    defaultRule ? "text-success-600" : "text-default-500"
+                  }
+                />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p
+                    className={`text-sm font-semibold transition-colors ${
+                      defaultRule ? "text-success-900" : "text-default-900"
+                    }`}
+                  >
+                    Valore Default
+                  </p>
+                  {defaultRule && (
+                    <Chip
+                      variant="flat"
+                      color="success"
+                      size="sm"
+                      className="h-5 px-1.5 text-[10px] font-semibold"
+                    >
+                      ON
+                    </Chip>
+                  )}
+                </div>
+                <p className="text-xs text-default-500 leading-relaxed">
+                  Valore ritornato se nessun target matcha
+                </p>
+              </div>
+            </div>
+            <div className="ml-4">
+              <Switch
+                color={defaultRule ? "success" : "default"}
+                isSelected={defaultRule}
+                onValueChange={setDefaultRule}
+                classNames={{
+                  wrapper: "group-data-[selected=true]:bg-success",
+                }}
+              />
             </div>
           </div>
-          <Switch
-            color="primary"
-            size="sm"
-            isSelected={defaultRule}
-            onValueChange={setDefaultRule}
-          />
-        </div>
-      </div>
+        </CardBody>
+      </Card>
 
       {/* Tabs */}
       <Tabs
@@ -319,98 +379,131 @@ export default function FeatureFlagEditor({
           key="targeting"
           title={
             <div className="flex items-center gap-2">
+              <Icon icon="lucide:target" width={14} />
               <span>Target</span>
               {targetingRules.length > 0 && (
-                <Chip size="sm" color="primary" variant="flat">
+                <Chip
+                  color="primary"
+                  variant="flat"
+                  size="sm"
+                  className="h-5 min-w-5 px-1.5"
+                >
                   {targetingRules.length}
                 </Chip>
               )}
             </div>
           }
         >
-          <div className="py-4 space-y-4">
+          <div className="py-6 space-y-5">
             {/* Lista compatta target con toggle */}
             {targetingRules.length > 0 && (
-              <div className="space-y-2">
-                <div className="text-xs font-medium text-default-500 mb-3">
-                  Target attivi
-                </div>
-                {targetingRules.map((target) => (
-                  <div
-                    key={target.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-default-200 bg-default-50"
-                  >
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Icon
-                        icon="lucide:target"
-                        width={14}
-                        className="text-primary flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        {target.name ? (
-                          <>
-                            <div className="text-sm font-medium text-default-900 truncate">
-                              {target.name}
-                            </div>
-                            <div className="text-xs text-default-500 truncate">
-                              {getTargetName(target)}
-                            </div>
-                          </>
-                        ) : (
-                          <span className="text-sm text-default-700 truncate">
-                            {getTargetName(target)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <Switch
-                      size="sm"
-                      isSelected={target.flagValue}
-                      isDisabled={!localEnabled}
-                      onValueChange={(value) =>
-                        updateTargetingRule(target.id, "flagValue", value)
-                      }
+              <Card shadow="none" className="border border-default-200">
+                <CardBody className="gap-3 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon
+                      icon="lucide:list"
+                      width={14}
+                      className="text-default-500"
                     />
+                    <span className="text-xs font-semibold text-default-700 uppercase tracking-wide">
+                      Target Attivi
+                    </span>
                   </div>
-                ))}
-                <Divider className="my-4" />
-              </div>
+                  <div className="space-y-2">
+                    {targetingRules.map((target) => (
+                      <div
+                        key={target.id}
+                        className="flex items-center justify-between p-3 rounded-lg border border-default-200 bg-default-50 hover:bg-default-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="p-1 rounded bg-primary-50">
+                            <Icon
+                              icon="lucide:target"
+                              width={12}
+                              className="text-primary flex-shrink-0"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            {target.name ? (
+                              <>
+                                <div className="text-sm font-medium text-default-900 truncate">
+                                  {target.name}
+                                </div>
+                                <div className="text-xs text-default-500 truncate">
+                                  {getTargetName(target)}
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-sm text-default-700 truncate">
+                                {getTargetName(target)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Switch
+                          color="success"
+                          isSelected={target.flagValue}
+                          isDisabled={!localEnabled}
+                          onValueChange={(value) =>
+                            updateTargetingRule(target.id, "flagValue", value)
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CardBody>
+              </Card>
             )}
 
-            {/* Dettagli completi target */}
+            {/* Dettagli configurazione target */}
             {targetingRules.length > 0 && (
-              <div className="text-xs font-medium text-default-500 mb-3 mt-4">
-                Dettagli configurazione
-              </div>
-            )}
-
-            {targetingRules.length > 0 ? (
-              <div className="flex flex-col gap-3">
-                {targetingRules.map((targetingRule, index) => (
-                  <div key={targetingRule.id} className="flex flex-col gap-2">
-                    <Card shadow="none" className="border border-default-200">
-                      <CardBody className="gap-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-default-500">
-                            Target {index + 1}
-                          </span>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Icon
+                    icon="lucide:settings"
+                    width={14}
+                    className="text-default-500"
+                  />
+                  <span className="text-xs font-semibold text-default-700 uppercase tracking-wide">
+                    Configurazione Target
+                  </span>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {targetingRules.map((targetingRule, index) => (
+                    <Card
+                      key={targetingRule.id}
+                      shadow="none"
+                      className="border border-default-200"
+                    >
+                      <CardBody className="gap-4 p-5">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-primary-50 flex items-center justify-center">
+                              <span className="text-xs font-semibold text-primary">
+                                {index + 1}
+                              </span>
+                            </div>
+                            <span className="text-sm font-medium text-default-700">
+                              Target {index + 1}
+                            </span>
+                          </div>
                           <Button
                             isIconOnly
-                            size="sm"
                             variant="light"
                             color="danger"
+                            size="sm"
                             onPress={() =>
                               removeTargetingRule(targetingRule.id)
                             }
+                            className="min-w-8 w-8 h-8"
                           >
-                            <Icon icon="lucide:trash-2" width={16} />
+                            <Icon icon="lucide:trash-2" width={14} />
                           </Button>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           <Input
                             label="Nome Target (opzionale)"
-                            size="sm"
                             type="text"
                             value={targetingRule.name || ""}
                             onChange={(e) =>
@@ -422,12 +515,15 @@ export default function FeatureFlagEditor({
                             }
                             placeholder="es. Admin Users, Beta Testers..."
                             variant="bordered"
+                            classNames={{
+                              input: "text-sm",
+                              label: "text-xs",
+                            }}
                           />
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <Select
                               label="Tipo"
-                              size="sm"
                               selectedKeys={[targetingRule.type]}
                               onSelectionChange={(keys) => {
                                 const value = Array.from(keys)[0] as string;
@@ -438,6 +534,10 @@ export default function FeatureFlagEditor({
                                 );
                               }}
                               variant="bordered"
+                              classNames={{
+                                trigger: "h-12",
+                                label: "text-xs",
+                              }}
                             >
                               <SelectItem key="user">Utente (email)</SelectItem>
                               <SelectItem key="domain">Dominio</SelectItem>
@@ -464,7 +564,6 @@ export default function FeatureFlagEditor({
 
                             <Select
                               label="Operatore"
-                              size="sm"
                               selectedKeys={[targetingRule.operator]}
                               onSelectionChange={(keys) => {
                                 const value = Array.from(keys)[0] as string;
@@ -475,6 +574,10 @@ export default function FeatureFlagEditor({
                                 );
                               }}
                               variant="bordered"
+                              classNames={{
+                                trigger: "h-12",
+                                label: "text-xs",
+                              }}
                             >
                               <SelectItem key="equals">Uguale a</SelectItem>
                               <SelectItem key="not_equals">
@@ -501,7 +604,6 @@ export default function FeatureFlagEditor({
 
                             <Input
                               label="Valore"
-                              size="sm"
                               type="text"
                               value={targetingRule.value}
                               onChange={(e) =>
@@ -521,34 +623,40 @@ export default function FeatureFlagEditor({
                                   : "valore..."
                               }
                               variant="bordered"
+                              classNames={{
+                                input: "text-sm",
+                                label: "text-xs",
+                              }}
                             />
                           </div>
                         </div>
                       </CardBody>
                     </Card>
-                    {index < targetingRules.length - 1 && (
-                      <div className="text-xs text-center text-default-400">
-                        oppure
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            ) : null}
+            )}
 
             <Button
               onPress={addTargetingRule}
               variant="bordered"
-              size="sm"
-              className="w-full border-dashed"
+              className="w-full border-dashed border-default-300 hover:border-primary transition-colors"
               startContent={<Icon icon="lucide:plus" width={16} />}
             >
-              Aggiungi target
+              Aggiungi Target
             </Button>
 
-            <div className="text-xs text-default-500 pt-2">
-              Default: <span className="font-mono text-success">true</span>
-            </div>
+            {targetingRules.length === 0 && (
+              <div className="text-center py-8 text-sm text-default-500">
+                <Icon
+                  icon="lucide:target"
+                  width={32}
+                  className="mx-auto mb-2 text-default-300"
+                />
+                <p>Nessun target configurato</p>
+                <p className="text-xs mt-1">Aggiungi un target per iniziare</p>
+              </div>
+            )}
           </div>
         </Tab>
 
@@ -556,92 +664,122 @@ export default function FeatureFlagEditor({
           key="rules"
           title={
             <div className="flex items-center gap-2">
+              <Icon icon="lucide:filter" width={14} />
               <span>Regole</span>
               {rules.length > 0 && (
-                <Chip size="sm" color="secondary" variant="flat">
+                <Chip
+                  color="secondary"
+                  variant="flat"
+                  size="sm"
+                  className="h-5 min-w-5 px-1.5"
+                >
                   {rules.length}
                 </Chip>
               )}
             </div>
           }
         >
-          <div className="py-4 space-y-4">
+          <div className="py-6 space-y-5">
             {rules.length > 0 ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 {rules.map((rule, index) => (
-                  <div key={rule.id} className="flex flex-col gap-2">
-                    <Card shadow="none" className="border border-default-200">
-                      <CardBody className="gap-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-default-500">
+                  <Card
+                    key={rule.id}
+                    shadow="none"
+                    className="border border-default-200"
+                  >
+                    <CardBody className="gap-4 p-5">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-secondary-50 flex items-center justify-center">
+                            <span className="text-xs font-semibold text-secondary">
+                              {index + 1}
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium text-default-700">
                             Regola {index + 1}
                           </span>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            color="danger"
-                            onPress={() => removeRule(rule.id)}
-                          >
-                            <Icon icon="lucide:trash-2" width={16} />
-                          </Button>
+                          {index < rules.length - 1 && (
+                            <Chip
+                              variant="flat"
+                              color="secondary"
+                              size="sm"
+                              className="ml-2"
+                            >
+                              AND
+                            </Chip>
+                          )}
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                          <Input
-                            label="Campo"
-                            size="sm"
-                            type="text"
-                            value={rule.field}
-                            onChange={(e) =>
-                              updateRule(rule.id, "field", e.target.value)
-                            }
-                            placeholder="es. country"
-                            variant="bordered"
-                          />
-
-                          <Select
-                            label="Operatore"
-                            size="sm"
-                            selectedKeys={[rule.operator]}
-                            onSelectionChange={(keys) => {
-                              const value = Array.from(keys)[0] as string;
-                              updateRule(rule.id, "operator", value);
-                            }}
-                            variant="bordered"
-                          >
-                            <SelectItem key="equals">Uguale a</SelectItem>
-                            <SelectItem key="not_equals">Diverso da</SelectItem>
-                            <SelectItem key="contains">Contiene</SelectItem>
-                            <SelectItem key="not_contains">
-                              Non contiene
-                            </SelectItem>
-                            <SelectItem key="greater_than">
-                              Maggiore di
-                            </SelectItem>
-                            <SelectItem key="less_than">Minore di</SelectItem>
-                          </Select>
-
-                          <Input
-                            label="Valore"
-                            size="sm"
-                            type="text"
-                            value={rule.value}
-                            onChange={(e) =>
-                              updateRule(rule.id, "value", e.target.value)
-                            }
-                            placeholder="es. IT"
-                            variant="bordered"
-                          />
-                        </div>
-                      </CardBody>
-                    </Card>
-                    {index < rules.length - 1 && (
-                      <div className="text-xs text-center text-default-400">
-                        e
+                        <Button
+                          isIconOnly
+                          variant="light"
+                          color="danger"
+                          size="sm"
+                          onPress={() => removeRule(rule.id)}
+                          className="min-w-8 w-8 h-8"
+                        >
+                          <Icon icon="lucide:trash-2" width={14} />
+                        </Button>
                       </div>
-                    )}
-                  </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <Input
+                          label="Campo"
+                          type="text"
+                          value={rule.field}
+                          onChange={(e) =>
+                            updateRule(rule.id, "field", e.target.value)
+                          }
+                          placeholder="es. country"
+                          variant="bordered"
+                          classNames={{
+                            input: "text-sm",
+                            label: "text-xs",
+                          }}
+                        />
+
+                        <Select
+                          label="Operatore"
+                          selectedKeys={[rule.operator]}
+                          onSelectionChange={(keys) => {
+                            const value = Array.from(keys)[0] as string;
+                            updateRule(rule.id, "operator", value);
+                          }}
+                          variant="bordered"
+                          classNames={{
+                            trigger: "h-12",
+                            label: "text-xs",
+                          }}
+                        >
+                          <SelectItem key="equals">Uguale a</SelectItem>
+                          <SelectItem key="not_equals">Diverso da</SelectItem>
+                          <SelectItem key="contains">Contiene</SelectItem>
+                          <SelectItem key="not_contains">
+                            Non contiene
+                          </SelectItem>
+                          <SelectItem key="greater_than">
+                            Maggiore di
+                          </SelectItem>
+                          <SelectItem key="less_than">Minore di</SelectItem>
+                        </Select>
+
+                        <Input
+                          label="Valore"
+                          type="text"
+                          value={rule.value}
+                          onChange={(e) =>
+                            updateRule(rule.id, "value", e.target.value)
+                          }
+                          placeholder="es. IT"
+                          variant="bordered"
+                          classNames={{
+                            input: "text-sm",
+                            label: "text-xs",
+                          }}
+                        />
+                      </div>
+                    </CardBody>
+                  </Card>
                 ))}
               </div>
             ) : null}
@@ -649,12 +787,25 @@ export default function FeatureFlagEditor({
             <Button
               onPress={addRule}
               variant="bordered"
-              size="sm"
-              className="w-full border-dashed"
+              className="w-full border-dashed border-default-300 hover:border-secondary transition-colors"
               startContent={<Icon icon="lucide:plus" width={16} />}
             >
-              Aggiungi regola
+              Aggiungi Regola
             </Button>
+
+            {rules.length === 0 && (
+              <div className="text-center py-8 text-sm text-default-500">
+                <Icon
+                  icon="lucide:filter"
+                  width={32}
+                  className="mx-auto mb-2 text-default-300"
+                />
+                <p>Nessuna regola configurata</p>
+                <p className="text-xs mt-1">
+                  Aggiungi una regola per filtrare i target
+                </p>
+              </div>
+            )}
           </div>
         </Tab>
 
@@ -667,7 +818,7 @@ export default function FeatureFlagEditor({
             </div>
           }
         >
-          <div className="py-4">
+          <div className="py-6">
             <div className="space-y-4 max-w-2xl mx-auto">
               {/* User Request - compatto */}
               <div className="flex justify-center">
@@ -714,7 +865,6 @@ export default function FeatureFlagEditor({
                     </span>
                   </div>
                   <Chip
-                    size="sm"
                     color={localEnabled ? "success" : "danger"}
                     variant="flat"
                   >
@@ -908,7 +1058,7 @@ export default function FeatureFlagEditor({
             </div>
           }
         >
-          <div className="py-4 space-y-6">
+          <div className="py-6 space-y-6">
             {/* Header con Configurazione */}
             <div className="flex items-center justify-between">
               <div>
@@ -952,7 +1102,7 @@ export default function FeatureFlagEditor({
                       className="text-primary"
                     />
                   </div>
-                  <Chip size="sm" variant="flat" color="primary">
+                  <Chip variant="flat" color="primary">
                     +23%
                   </Chip>
                 </div>
@@ -973,7 +1123,7 @@ export default function FeatureFlagEditor({
                       className="text-primary"
                     />
                   </div>
-                  <Chip size="sm" variant="flat" color="primary">
+                  <Chip variant="flat" color="primary">
                     +15%
                   </Chip>
                 </div>
@@ -981,47 +1131,6 @@ export default function FeatureFlagEditor({
                   {localEnabled ? "3,247" : "0"}
                 </p>
                 <p className="text-xs text-default-500 mt-1">Utenti unici</p>
-              </div>
-
-              <div className="p-4 rounded-xl border border-primary-200 bg-white hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 rounded-lg bg-primary-50">
-                    <Icon
-                      icon="lucide:target"
-                      width={18}
-                      className="text-primary"
-                    />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-default-900">
-                  {targetingRules.length > 0 && localEnabled
-                    ? `${Math.round(
-                        (targetingRules.filter((t) => t.flagValue).length /
-                          targetingRules.length) *
-                          100
-                      )}%`
-                    : "N/A"}
-                </p>
-                <p className="text-xs text-default-500 mt-1">Match target</p>
-              </div>
-
-              <div className="p-4 rounded-xl border border-primary-200 bg-white hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 rounded-lg bg-primary-50">
-                    <Icon
-                      icon="lucide:zap"
-                      width={18}
-                      className="text-primary"
-                    />
-                  </div>
-                  <Chip size="sm" variant="flat" color="success">
-                    -5ms
-                  </Chip>
-                </div>
-                <p className="text-2xl font-bold text-default-900">
-                  {localEnabled ? "23ms" : "N/A"}
-                </p>
-                <p className="text-xs text-default-500 mt-1">Tempo risposta</p>
               </div>
             </div>
 
@@ -1032,10 +1141,10 @@ export default function FeatureFlagEditor({
                   Visualizzazioni Ultimi 7 Giorni
                 </h3>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="flat" color="primary">
+                  <Button variant="flat" color="primary">
                     7g
                   </Button>
-                  <Button size="sm" variant="flat" color="default">
+                  <Button variant="flat" color="default">
                     30g
                   </Button>
                 </div>
@@ -1159,7 +1268,7 @@ export default function FeatureFlagEditor({
                   Distribuzione per Target
                 </h3>
                 {targetingRules.length === 0 && (
-                  <Chip size="sm" variant="flat" color="default">
+                  <Chip variant="flat" color="default">
                     Nessun target
                   </Chip>
                 )}
@@ -1194,7 +1303,7 @@ export default function FeatureFlagEditor({
                               {target.name || getTargetName(target)}
                             </span>
                             {!target.flagValue && (
-                              <Chip size="sm" variant="flat" color="default">
+                              <Chip variant="flat" color="default">
                                 OFF
                               </Chip>
                             )}
@@ -1234,7 +1343,6 @@ export default function FeatureFlagEditor({
                             Default Rule (no match)
                           </span>
                           <Chip
-                            size="sm"
                             variant="flat"
                             color={defaultRule ? "primary" : "default"}
                           >
@@ -1307,7 +1415,7 @@ export default function FeatureFlagEditor({
                           </span>
                         </span>
                       </div>
-                      <Chip size="sm" variant="flat" color="primary">
+                      <Chip variant="flat" color="primary">
                         AND
                       </Chip>
                     </div>
@@ -1456,57 +1564,6 @@ export default function FeatureFlagEditor({
                 )}
               </div>
             </div>
-
-            {/* Performance Timeline */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-default-900">
-                Carico nel Tempo
-              </h3>
-
-              <div className="p-4 rounded-xl border border-primary-200 bg-white">
-                <div className="space-y-3">
-                  {[
-                    { time: "00:00 - 06:00", load: 15 },
-                    { time: "06:00 - 12:00", load: 65 },
-                    { time: "12:00 - 18:00", load: 92 },
-                    { time: "18:00 - 24:00", load: 48 },
-                  ].map((slot, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-default-700 font-medium font-mono">
-                          {slot.time}
-                        </span>
-                        <span className="text-default-900 font-semibold">
-                          {slot.load}%
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-default-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all"
-                          style={{ width: `${slot.load}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Note informativa */}
-            <div className="flex items-center gap-2 p-4 rounded-xl border border-default-200 bg-default-50">
-              <Icon
-                icon="lucide:info"
-                width={16}
-                className="text-primary flex-shrink-0"
-              />
-              <p className="text-xs text-default-600">
-                <span className="font-medium text-default-900">
-                  Dati simulati:
-                </span>{" "}
-                Le analitiche mostrano dati dummy per demo. In produzione
-                verranno aggiornate in tempo reale.
-              </p>
-            </div>
           </div>
         </Tab>
 
@@ -1519,27 +1576,28 @@ export default function FeatureFlagEditor({
             </div>
           }
         >
-          <div className="py-4 space-y-4">
+          <div className="py-6 space-y-4">
             <Card
               shadow="none"
               className="bg-default-900 border border-default-200"
             >
               <CardBody className="relative p-0">
-                <div className="absolute top-2 right-2 z-10">
+                <div className="absolute top-3 right-3 z-10">
                   <Button
-                    size="sm"
                     variant="flat"
+                    size="sm"
                     startContent={<Icon icon="lucide:copy" width={14} />}
                     onPress={() => {
                       navigator.clipboard.writeText(
                         JSON.stringify(generateJSON(), null, 2)
                       );
                     }}
+                    className="bg-default-800 hover:bg-default-700 text-default-50"
                   >
                     Copia
                   </Button>
                 </div>
-                <pre className="text-default-50 p-4 overflow-x-auto text-xs font-mono">
+                <pre className="text-default-50 p-5 overflow-x-auto text-xs font-mono leading-relaxed">
                   {JSON.stringify(generateJSON(), null, 2)}
                 </pre>
               </CardBody>
