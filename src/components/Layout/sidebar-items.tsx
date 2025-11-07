@@ -45,24 +45,6 @@ export const sectionItems: SidebarItem[] = [
     title: "Gestione",
     items: [
       {
-        key: "clients",
-        href: "/clients",
-        icon: "solar:users-group-rounded-outline",
-        title: "Clienti",
-      },
-      {
-        key: "invoices",
-        href: "/invoices",
-        icon: "solar:bill-list-outline",
-        title: "Fatture",
-      },
-      {
-        key: "reports",
-        href: "/reports",
-        icon: "solar:chart-outline",
-        title: "Report",
-      },
-      {
         key: "settings",
         href: "/settings",
         icon: "solar:settings-outline",

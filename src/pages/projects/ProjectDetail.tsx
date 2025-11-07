@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ProjectDetailTask from "../../components/Project/ProjectDetail/ProjectDetailTask";
+import ProjectFeatureFlags from "../../components/Project/ProjectDetail/ProjectFeatureFlags/ProjectFeatureFlags";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -209,15 +210,23 @@ export default function ProjectDetail() {
           key="vault"
           title={
             <div className="flex items-center gap-2">
-              <Icon
-                icon="solar:users-group-rounded-linear"
-                className="text-lg"
-              />
+              <Icon icon="fluent:vault-24-regular" className="text-lg" />
               <span>Vault</span>
             </div>
           }
         >
           <h1>Vault</h1>
+        </Tab>
+        <Tab
+          key="feature_flag"
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="mingcute:switch-line" className="text-lg" />
+              <span>Feature Flag</span>
+            </div>
+          }
+        >
+          <ProjectFeatureFlags />
         </Tab>
       </Tabs>
     </div>

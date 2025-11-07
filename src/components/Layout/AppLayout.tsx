@@ -61,11 +61,8 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
         hidden={!isAuth}
       >
         <div className="flex items-center gap-2 px-2">
-          <div className="bg-foreground flex h-8 w-8 items-center justify-center rounded-full">
-            <ProjectManagerIcon className="text-background" />
-          </div>
           <span className="text-small font-bold uppercase">
-            Project Manager
+            Space Design Aurora
           </span>
         </div>
 
