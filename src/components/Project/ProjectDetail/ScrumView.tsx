@@ -226,6 +226,7 @@ function SortableTask({
 export default function ScrumView({ projectId }: ScrumViewProps) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [sprintModalOpen, setSprintModalOpen] = useState(false);
+  const [editSprintId, setEditSprintId] = useState<number | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpen, setTaskDetailOpen] = useState(false);
@@ -242,6 +243,20 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
       })
       .then((res) => {
         if (res.status === 200) {
+          // Ordina le colonne: "completed" va per ultima
+          const sortedStatuses = res.data.task_statuses.sort(
+            (a: TaskStatus, b: TaskStatus) => {
+              const aName = a.name.toLowerCase();
+              const bName = b.name.toLowerCase();
+              const isACompleted = aName === "completed";
+              const isBCompleted = bName === "completed";
+
+              if (isACompleted && !isBCompleted) return 1;
+              if (!isACompleted && isBCompleted) return -1;
+              return 0;
+            }
+          );
+          setTaskStatuses(sortedStatuses);
           setTaskStatuses(res.data.task_statuses);
           setLoading((prev) => prev + 1);
         }
@@ -296,7 +311,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
-    task_status_id: 1,
+    task_status_id: TaskStatuses[0]?.task_status_id || 1,
     task_priority_id: 1,
     story_points: 0,
     sprint_id: null as number | null,
@@ -311,7 +326,79 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
     project_id: projectId,
   });
 
+  const [editSprint, setEditSprint] = useState({
+    name: "",
+    description: "",
+    start_date: new Date().toISOString().split("T")[0],
+    end_date: new Date().toISOString().split("T")[0],
+    project_id: projectId,
+  });
+
+  async function getSprintById(sprintId: number) {
+    axios
+      .get(`/project/GET/get-sprint-by-id`, {
+        params: { sprint_id: sprintId },
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          setEditSprint({
+            name: res.data.sprint.name,
+            description: res.data.sprint.description,
+            start_date: res.data.sprint.start_date.split("T")[0],
+            end_date: res.data.sprint.end_date.split("T")[0],
+            project_id: res.data.sprint.project_id,
+          });
+          setEditSprintId(sprintId);
+        }
+      });
+  }
+
+  const handleEditSprint = async () => {
+    await axios
+      .put(`/project/UPDATE/update-sprint`, {
+        sprint_id: editSprintId,
+        sprint_data: editSprint,
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Sprint modificato con successo!",
+            description: "Il sprint è stato modificato con successo",
+            color: "success",
+          });
+          setUpdate(!update);
+        } else {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Errore durante la modifica del sprint",
+            description: "Controlla i dati inseriti e riprova",
+            color: "danger",
+          });
+        }
+      })
+      .catch(() => {
+        addToast({
+          timeout: 3000,
+          shouldShowTimeoutProgress: true,
+          title: "Errore durante la modifica del sprint",
+          description: "Controlla i dati inseriti e riprova",
+          color: "danger",
+        });
+      });
+    setEditSprintId(null);
+    onClose();
+  };
+
   const handleCreateTask = () => {
+    if (TaskStatuses.length > 0) {
+      setNewTask({
+        ...newTask,
+        task_status_id: TaskStatuses[0].task_status_id,
+      });
+    }
     axios
       .post(`/project/POST/create-task`, { task_data: newTask })
       .then((res) => {
@@ -319,7 +406,7 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
           setNewTask({
             title: "",
             description: "",
-            task_status_id: 1,
+            task_status_id: TaskStatuses[0].task_status_id,
             task_priority_id: 1,
             story_points: 0,
             sprint_id: null as number | null,
@@ -922,6 +1009,9 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                   startContent={
                                     <Icon icon="solar:pen-linear" />
                                   }
+                                  onPress={() =>
+                                    getSprintById(sprint.sprint_id)
+                                  }
                                 >
                                   Modifica Sprint
                                 </DropdownItem>
@@ -1070,6 +1160,9 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                   color="primary"
                                   startContent={
                                     <Icon icon="solar:pen-linear" />
+                                  }
+                                  onPress={() =>
+                                    getSprintById(sprint.sprint_id)
                                   }
                                 >
                                   Modifica Sprint
@@ -1571,6 +1664,93 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                       </Button>
                       <Button color="primary" onPress={handleCreateSprint}>
                         Crea Sprint
+                      </Button>
+                    </ModalFooter>
+                  </ModalContent>
+                </Modal>
+
+                {/* Modal Modifica Sprint */}
+                <Modal
+                  isOpen={editSprintId ? true : false}
+                  onClose={() => setEditSprintId(null)}
+                  size="2xl"
+                >
+                  <ModalContent>
+                    <ModalHeader>Modifica Sprint</ModalHeader>
+                    <ModalBody>
+                      <div className="space-y-4">
+                        <Input
+                          label="Nome Sprint"
+                          placeholder="Es: Sprint 1 - Foundation"
+                          value={editSprint?.name || ""}
+                          onChange={(e) =>
+                            setEditSprint({
+                              ...editSprint,
+                              name: e.target.value,
+                            })
+                          }
+                        />
+                        <Textarea
+                          label="Obiettivo Sprint"
+                          placeholder="Descrivi l'obiettivo principale..."
+                          value={editSprint?.description || ""}
+                          onChange={(e) =>
+                            setEditSprint({
+                              ...editSprint,
+                              description: e.target.value,
+                            })
+                          }
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <DatePicker
+                            className="cursor-pointer"
+                            label="Data Inizio"
+                            value={
+                              parseDate(editSprint?.start_date || "") as any
+                            }
+                            onChange={(e) => {
+                              if (e) {
+                                const year = e.year.toString();
+                                const month = e.month
+                                  .toString()
+                                  .padStart(2, "0");
+                                const day = e.day.toString().padStart(2, "0");
+                                setEditSprint({
+                                  ...editSprint,
+                                  start_date: `${year}-${month}-${day}`,
+                                });
+                              }
+                            }}
+                          />
+                          <DatePicker
+                            label="Data Fine"
+                            value={parseDate(editSprint?.end_date || "") as any}
+                            onChange={(e) => {
+                              if (e) {
+                                const year = e.year.toString();
+                                const month = e.month
+                                  .toString()
+                                  .padStart(2, "0");
+                                const day = e.day.toString().padStart(2, "0");
+                                setEditSprint({
+                                  ...editSprint,
+                                  end_date: `${year}-${month}-${day}`,
+                                });
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </ModalBody>
+                    <ModalFooter>
+                      <Button
+                        variant="light"
+                        onPress={() => setEditSprintId(null)}
+                      >
+                        Annulla
+                      </Button>
+                      <Button color="primary" onPress={handleEditSprint}>
+                        Modifica Sprint
                       </Button>
                     </ModalFooter>
                   </ModalContent>
