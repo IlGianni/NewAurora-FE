@@ -116,10 +116,15 @@ function SortableTask({
               }
             }}
           >
-            <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex items-start justify-start gap-2 mb-2">
               <h4 className="font-semibold text-sm text-default-900 leading-snug">
                 {task.title}
               </h4>
+              {task.task_status.name.toLowerCase() === "completed" && (
+                <span className="text-[10px] font-medium px-2 py-0.5 bg-success-100 text-primary rounded-full">
+                  Completato
+                </span>
+              )}
             </div>
 
             {task.description && (
@@ -136,7 +141,10 @@ function SortableTask({
                   size="sm"
                   className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
                 >
-                  {task.task_priority?.name}
+                  {task.task_priority?.name
+                    .split(" ")
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ")}
                 </Chip>
                 {task.story_points && (
                   <Chip
@@ -1295,7 +1303,13 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                               size="sm"
                               className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
                             >
-                              {selectedTask.task_priority?.name}
+                              {selectedTask.task_priority?.name
+                                .split(" ")
+                                .map(
+                                  (word) =>
+                                    word.charAt(0).toUpperCase() + word.slice(1)
+                                )
+                                .join(" ")}
                             </Chip>
                             {selectedTask.story_points && (
                               <Chip
@@ -1315,7 +1329,14 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                 Descrizione
                               </label>
                               <p className="text-sm text-default-600">
-                                {selectedTask.description}
+                                {selectedTask.description
+                                  .split(" ")
+                                  .map(
+                                    (word) =>
+                                      word.charAt(0).toUpperCase() +
+                                      word.slice(1)
+                                  )
+                                  .join(" ")}
                               </p>
                             </div>
 
@@ -1329,7 +1350,14 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                                   variant="flat"
                                   size="sm"
                                 >
-                                  {selectedTask.task_status.name}
+                                  {selectedTask.task_status.name
+                                    .split(" ")
+                                    .map(
+                                      (word) =>
+                                        word.charAt(0).toUpperCase() +
+                                        word.slice(1)
+                                    )
+                                    .join(" ")}
                                 </Chip>
                               </div>
                             </div>
@@ -1406,7 +1434,10 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                             }}
                           >
                             {TaskPriorities.map((priority) => (
-                              <SelectItem key={priority.task_priority_id}>
+                              <SelectItem
+                                key={priority.task_priority_id}
+                                color="primary"
+                              >
                                 {priority.name.charAt(0).toUpperCase() +
                                   priority.name.slice(1)}
                               </SelectItem>

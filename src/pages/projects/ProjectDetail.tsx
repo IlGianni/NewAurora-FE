@@ -29,8 +29,6 @@ export default function ProjectDetail() {
       });
   }, [id]);
 
-  console.log(project);
-
   return (
     <div className="space-y-8 flex flex-col gap-2">
       {/* Banner Progetto Minimal */}
