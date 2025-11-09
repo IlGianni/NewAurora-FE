@@ -3,6 +3,8 @@ import { Icon } from "@iconify/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ProjectDetailTask from "../../components/Project/ProjectDetail/ProjectDetailTask";
+import type { Project } from "../../types";
+import axios from "axios";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -10,47 +12,22 @@ export default function ProjectDetail() {
 
   // Stato di loading
   const [isLoading, setIsLoading] = useState(true);
-
-  // Simula il caricamento dei dati
+  const [project, setProject] = useState<Project | null>(null);
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Dati mock per il progetto specifico
-  const project = {
-    id: parseInt(id || "1"),
-    name: "Aurora Design System",
-    description:
-      "Sistema di design completo per l'applicazione Aurora con componenti riutilizzabili, palette di colori e linee guida per la coerenza visiva.",
-    status: "In Progress",
-    priority: "High",
-    team: [
-      {
-        name: "Andrea",
-        avatar: "https://i.pravatar.cc/150?img=1",
-        role: "Lead Designer",
-      },
-      {
-        name: "Marco",
-        avatar: "https://i.pravatar.cc/150?img=2",
-        role: "Frontend Developer",
-      },
-      {
-        name: "Sofia",
-        avatar: "https://i.pravatar.cc/150?img=3",
-        role: "UX Designer",
-      },
-    ],
-    deadline: "2024-02-15",
-    tasks: { completed: 12, total: 16 },
-    progress: 75,
-    createdAt: "2024-01-01",
-    updatedAt: "2024-01-15",
-  };
+    setIsLoading(true);
+    axios
+      .get(`/project/GET/get-project-by-unique-id`, {
+        params: {
+          unique_id: id,
+        },
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          setProject(res.data.project);
+          setIsLoading(false);
+        }
+      });
+  }, [id]);
 
   return (
     <div className="space-y-8 flex flex-col gap-2">
@@ -87,20 +64,20 @@ export default function ProjectDetail() {
             {/* Header con navigazione */}
             <div className="flex items-start justify-between">
               <Button
-                variant="flat"
+                variant="solid"
                 size="sm"
                 startContent={<Icon icon="solar:arrow-left-linear" />}
                 onClick={() => navigate("/projects")}
-                className="bg-white/90 text-gray-800 hover:bg-white transition-colors backdrop-blur-sm border border-white/30 shadow-lg"
+                color="primary"
               >
                 Progetti
               </Button>
 
               <Button
-                variant="light"
+                variant="solid"
                 size="sm"
+                color="primary"
                 startContent={<Icon icon="solar:settings-linear" />}
-                className="bg-white/90 text-gray-800 hover:bg-white transition-colors backdrop-blur-sm border border-white/30 shadow-lg"
               >
                 Impostazioni
               </Button>
@@ -110,7 +87,7 @@ export default function ProjectDetail() {
             <div className="space-y-4">
               <div>
                 <h1 className="text-4xl font-light text-white mb-2 tracking-tight drop-shadow-lg">
-                  {project.name}
+                  {project!.name}
                 </h1>
                 <div className="flex items-center gap-4 text-sm text-white/90">
                   <div className="flex items-center gap-1">
@@ -118,17 +95,20 @@ export default function ProjectDetail() {
                       icon="solar:users-group-rounded-linear"
                       className="text-base"
                     />
-                    <span>{project.team.length} membri</span>
+                    <span>{project!.project_members.length} membri</span>
                   </div>
                   <div className="w-1 h-1 bg-white/60 rounded-full" />
                   <div className="flex items-center gap-1">
                     <Icon icon="solar:calendar-linear" className="text-base" />
                     <span>
-                      {new Date(project.createdAt).toLocaleDateString("it-IT", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
+                      {new Date(project!.created_at).toLocaleDateString(
+                        "it-IT",
+                        {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        }
+                      )}
                     </span>
                   </div>
                 </div>
@@ -137,11 +117,15 @@ export default function ProjectDetail() {
               {/* Status badge */}
               <div className="flex items-center gap-3">
                 <Chip variant="solid" color="primary">
-                  {project.status}
+                  {project!.project_status.name}
                 </Chip>
                 <Chip variant="solid" color="primary">
-                  {project.tasks.completed}/{project.tasks.total} task
-                  completate
+                  {
+                    project!.tasks.filter(
+                      (task) => task.task_status.name === "completed"
+                    ).length
+                  }
+                  /{project!.tasks.length} task completate
                 </Chip>
               </div>
             </div>
@@ -154,7 +138,8 @@ export default function ProjectDetail() {
         variant="bordered"
         color="primary"
         classNames={{
-          tabList: "bg-white border border-default-200 rounded-3xl p-2",
+          tabList:
+            "bg-white border border-default-200 rounded-3xl p-2 overflow-hidden",
           cursor: "w-full rounded-3xl",
         }}
       >
