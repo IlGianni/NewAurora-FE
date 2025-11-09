@@ -120,8 +120,12 @@ export default function ProjectDetail() {
                   {project!.project_status.name}
                 </Chip>
                 <Chip variant="solid" color="primary">
-                  {project!.tasks.length}/{project!.tasks.length} task
-                  completate
+                  {
+                    project!.tasks.filter(
+                      (task) => task.task_status.name === "completed"
+                    ).length
+                  }
+                  /{project!.tasks.length} task completate
                 </Chip>
               </div>
             </div>

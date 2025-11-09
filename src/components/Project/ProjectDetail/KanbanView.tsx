@@ -17,26 +17,12 @@ import {
   SelectItem,
   Select,
   addToast,
+  Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import type { TaskStatus, Task, TaskPriority } from "../../../types";
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  closestCorners,
-  type DragEndEvent,
-  type DragStartEvent,
-  useDroppable,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import type { DropResult } from "@hello-pangea/dnd";
 import axios from "axios";
 
 interface KanbanViewProps {
@@ -49,110 +35,97 @@ interface TaskStatusWithTasks extends TaskStatus {
 }
 
 // Componente per singolo task drag & drop
-function SortableTaskCard({
+function TaskCard({
   task,
+  index,
   onTaskClick,
 }: {
   task: Task;
+  index: number;
   onTaskClick: (task: Task) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: task.task_id,
-    transition: {
-      duration: 200,
-      easing: "cubic-bezier(0.25, 1, 0.5, 1)",
-    },
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="group mb-2 hover:cursor-pointer"
-    >
-      <div className="bg-default/10 border border-default-50 rounded-xl p-3 hover:border-default-300 hover:shadow-sm transition-all duration-200">
-        <div className="flex items-start gap-2">
-          {/* Drag Handle */}
+    <Draggable draggableId={task.task_id.toString()} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className="mb-2 group"
+        >
           <div
-            {...attributes}
-            {...listeners}
-            className="flex-shrink-0 cursor-grab active:cursor-grabbing pt-0.5 transition-opacity"
+            className={`bg-default/10 border border-default-50 rounded-xl p-3 hover:border-default-300 hover:shadow-sm`}
           >
-            <Icon
-              icon="solar:hamburger-menu-linear"
-              className="text-default-400 text-lg"
-            />
-          </div>
+            <div className="flex items-start gap-2">
+              {/* Drag Handle */}
+              <div className="flex-shrink-0 cursor-grab active:cursor-grabbing pt-0.5 transition-opacity">
+                <Icon
+                  icon="solar:hamburger-menu-linear"
+                  className="text-default-400 text-lg"
+                />
+              </div>
 
-          {/* Task Content */}
-          <div
-            className="flex-1 min-w-0"
-            onClick={(e) => {
-              if (!isDragging) {
-                e.stopPropagation();
-                onTaskClick(task);
-              }
-            }}
-          >
-            <h4 className="font-medium text-sm text-default-900 mb-2 line-clamp-2">
-              {task.title}
-            </h4>
-            <p className="text-xs text-default-500 mb-3 line-clamp-2">
-              {task.description}
-            </p>
-            <div className="flex items-center gap-2">
-              <Chip
-                color={task.task_priority.color as any}
-                variant="flat"
-                size="sm"
-                className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+              {/* Task Content */}
+              <div
+                className="flex-1 min-w-0"
+                onClick={(e) => {
+                  if (!snapshot.isDragging) {
+                    e.stopPropagation();
+                    onTaskClick(task);
+                  }
+                }}
               >
-                {task.task_priority.name}
-              </Chip>
+                <h4 className="font-medium text-sm text-default-900 mb-2 line-clamp-2">
+                  {task.title}
+                </h4>
+                <p className="text-xs text-default-500 mb-3 line-clamp-2">
+                  {task.description}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Chip
+                    color={task.task_priority.color as any}
+                    variant="flat"
+                    size="sm"
+                    className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                  >
+                    {task.task_priority.name}
+                  </Chip>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                <Dropdown>
+                  <DropdownTrigger>
+                    <Button
+                      isIconOnly
+                      variant="light"
+                      size="sm"
+                      className="min-w-6 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Icon
+                        icon="solar:menu-dots-linear"
+                        className="text-base"
+                      />
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu>
+                    <DropdownItem key="edit">Modifica</DropdownItem>
+                    <DropdownItem
+                      key="delete"
+                      className="text-danger"
+                      color="danger"
+                    >
+                      Elimina
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              </div>
             </div>
           </div>
-
-          {/* Actions */}
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <Dropdown>
-              <DropdownTrigger>
-                <Button
-                  isIconOnly
-                  variant="light"
-                  size="sm"
-                  className="min-w-6 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Icon icon="solar:menu-dots-linear" className="text-base" />
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu>
-                <DropdownItem key="edit">Modifica</DropdownItem>
-                <DropdownItem
-                  key="delete"
-                  className="text-danger"
-                  color="danger"
-                >
-                  Elimina
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </Draggable>
   );
 }
 
@@ -170,120 +143,125 @@ function KanbanColumnCard({
   onEditColumn: (columnId: number) => void;
   onTaskClick: (task: Task) => void;
 }) {
-  const taskIds = column.tasks.map((t: Task) => t.task_id);
-  const { setNodeRef } = useDroppable({
-    id: column.task_status_id,
-  });
-
   return (
     <div className="flex-shrink-0 w-80">
-      <div className="bg-default-50/50 border border-default-200 rounded-xl p-4 h-full flex flex-col backdrop-blur-sm">
-        {/* Header colonna */}
-        <div className="flex items-start justify-between mb-3 pb-3 border-b border-default-200">
-          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-            <div
-              className={`w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm bg-${column.color}`}
-            />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-sm text-default-900 truncate uppercase tracking-wide">
-                {column.name}
-              </h3>
-              <div className="flex items-center gap-2 text-xs text-default-500 mt-1">
-                <span className="font-semibold bg-default/10 px-2 py-0.5 rounded-full text-primary">
-                  {column.tasks.length} task
-                </span>
-              </div>
-            </div>
-          </div>
-          {column.name !== "completed" && (
-            <Dropdown>
-              <DropdownTrigger>
-                <Button
-                  isIconOnly
-                  variant="flat"
-                  size="sm"
-                  className="min-w-7 w-7 h-7"
-                  title="Opzioni colonna"
-                >
-                  <Icon icon="solar:menu-dots-bold" className="text-base" />
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu>
-                <DropdownItem
-                  key="add-task"
-                  onPress={() => onAddTask(column.task_status_id)}
-                  startContent={<Icon icon="solar:add-circle-linear" />}
-                  color="primary"
-                >
-                  Aggiungi Task
-                </DropdownItem>
-                <DropdownItem
-                  key="edit"
-                  onPress={() => onEditColumn(column.task_status_id)}
-                  startContent={<Icon icon="solar:pen-linear" />}
-                  color="primary"
-                >
-                  Modifica Colonna
-                </DropdownItem>
-                <DropdownItem
-                  key="delete"
-                  className="text-danger"
-                  color="danger"
-                  onPress={() => onDeleteColumn(column.task_status_id)}
-                  startContent={<Icon icon="solar:trash-bin-trash-linear" />}
-                >
-                  Elimina Colonna
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-          )}
-        </div>
-
-        {/* Task list */}
-        <div
-          ref={setNodeRef}
-          className="flex-1 overflow-y-auto -mx-1 px-1"
-          style={{ maxHeight: "calc(100vh - 450px)" }}
-        >
-          <SortableContext
-            items={taskIds}
-            strategy={verticalListSortingStrategy}
+      <Droppable droppableId={column.task_status_id.toString()}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={`bg-default-50/50 border-2 rounded-xl p-4 h-full flex flex-col backdrop-blur-sm transition-all duration-200 ${
+              snapshot.isDraggingOver
+                ? "border-primary-500 bg-primary-50/30 shadow-lg"
+                : "border-default-200"
+            }`}
           >
-            {column.tasks.length === 0 ? (
-              <div className="text-center py-16 text-default-400">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-3 shadow-sm">
-                  <Icon
-                    icon="solar:clipboard-linear"
-                    className="text-3xl text-default-400"
-                  />
-                </div>
-                <p className="text-xs font-medium">Trascina qui i task</p>
-              </div>
-            ) : (
-              column.tasks.map((task) => (
-                <SortableTaskCard
-                  key={task.task_id}
-                  task={task}
-                  onTaskClick={onTaskClick}
+            {/* Header colonna */}
+            <div className="flex items-start justify-between mb-3 pb-3 border-b border-default-200">
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <div
+                  className={`w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm bg-${column.color}`}
                 />
-              ))
-            )}
-          </SortableContext>
-        </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-sm text-default-900 truncate uppercase tracking-wide">
+                    {column.name}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-default-500 mt-1">
+                    <span className="font-semibold bg-default/10 px-2 py-0.5 rounded-full text-primary">
+                      {column.tasks.length} task
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {column.name !== "completed" && (
+                <Dropdown>
+                  <DropdownTrigger>
+                    <Button
+                      isIconOnly
+                      variant="flat"
+                      size="sm"
+                      className="min-w-7 w-7 h-7"
+                      title="Opzioni colonna"
+                    >
+                      <Icon icon="solar:menu-dots-bold" className="text-base" />
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu>
+                    <DropdownItem
+                      key="add-task"
+                      onPress={() => onAddTask(column.task_status_id)}
+                      startContent={<Icon icon="solar:add-circle-linear" />}
+                      color="primary"
+                    >
+                      Aggiungi Task
+                    </DropdownItem>
+                    <DropdownItem
+                      key="edit"
+                      onPress={() => onEditColumn(column.task_status_id)}
+                      startContent={<Icon icon="solar:pen-linear" />}
+                      color="primary"
+                    >
+                      Modifica Colonna
+                    </DropdownItem>
+                    <DropdownItem
+                      key="delete"
+                      className="text-danger"
+                      color="danger"
+                      onPress={() => onDeleteColumn(column.task_status_id)}
+                      startContent={
+                        <Icon icon="solar:trash-bin-trash-linear" />
+                      }
+                    >
+                      Elimina Colonna
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              )}
+            </div>
 
-        {/* Pulsante aggiungi */}
-        <Button
-          variant="bordered"
-          size="sm"
-          className="w-full mt-3 font-medium border-dashed hover:border-primary hover:bg-primary-50"
-          startContent={
-            <Icon icon="solar:add-circle-linear" className="text-lg" />
-          }
-          onPress={() => onAddTask(column.task_status_id)}
-        >
-          Aggiungi Task
-        </Button>
-      </div>
+            {/* Task list */}
+            <div
+              className="flex-1 overflow-y-auto -mx-1 px-1"
+              style={{ maxHeight: "calc(100vh - 450px)" }}
+            >
+              {column.tasks.length === 0 ? (
+                <div className="text-center py-16 text-default-400">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-default-50 rounded-full mb-3 shadow-sm">
+                    <Icon
+                      icon="solar:clipboard-linear"
+                      className="text-3xl text-default-400"
+                    />
+                  </div>
+                  <p className="text-xs font-medium">Trascina qui i task</p>
+                </div>
+              ) : (
+                column.tasks.map((task, index) => (
+                  <TaskCard
+                    key={task.task_id}
+                    task={task}
+                    index={index}
+                    onTaskClick={onTaskClick}
+                  />
+                ))
+              )}
+              {provided.placeholder}
+            </div>
+
+            {/* Pulsante aggiungi */}
+            <Button
+              variant="bordered"
+              size="sm"
+              className="w-full mt-3 font-medium border-dashed hover:border-primary hover:bg-primary-50"
+              startContent={
+                <Icon icon="solar:add-circle-linear" className="text-lg" />
+              }
+              onPress={() => onAddTask(column.task_status_id)}
+            >
+              Aggiungi Task
+            </Button>
+          </div>
+        )}
+      </Droppable>
     </div>
   );
 }
@@ -301,7 +279,6 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
     onClose: onColumnModalClose,
   } = useDisclosure();
 
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [selectedColumnId, setSelectedColumnId] = useState<number | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailOpen, setTaskDetailOpen] = useState(false);
@@ -310,8 +287,10 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
   const [columns, setColumns] = useState<TaskStatusWithTasks[]>([]);
   const [TaskPriorities, setTaskPriorities] = useState<TaskPriority[]>([]);
   const [update, setUpdate] = useState(false);
+  const [loading, setLoading] = useState(0);
 
   useEffect(() => {
+    setLoading((prev) => prev - 3); // -3 per le tre chiamate API
     // Carica i task status con i task associati
     axios
       .get(`/project/GET/get-task-statuses`, {
@@ -337,6 +316,7 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
             return 0;
           });
           setColumns(sortedStatuses);
+          setLoading((prev) => prev + 1);
         }
       });
 
@@ -344,6 +324,7 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
     axios.get(`/project/GET/get-task-priorities`).then((res) => {
       if (res.status === 200) {
         setTaskPriorities(res.data.task_priorities);
+        setLoading((prev) => prev + 1);
       }
     });
 
@@ -375,6 +356,7 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
               return 0;
             });
           });
+          setLoading((prev) => prev + 1);
         }
       });
   }, [projectId, update]);
@@ -396,100 +378,119 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
     project_id: projectId,
   });
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-
-    // Trova il task attivo in tutte le colonne
-    let activeTask: Task | null = null;
-    for (const column of columns) {
-      activeTask = column.tasks.find((t) => t.task_id === active.id) || null;
-      if (activeTask) break;
+    // Se non c'è destinazione, non fare nulla
+    if (!destination) {
+      return;
     }
-    setActiveTask(activeTask);
-  };
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveTask(null);
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
 
-    if (!over || active.id === over.id) return;
+    const sourceColumnId = parseInt(source.droppableId);
+    const destColumnId = parseInt(destination.droppableId);
+    const taskId = parseInt(draggableId);
 
-    const activeId = active.id as number;
-    const overId = over.id as number;
+    // Se è la stessa colonna, non fare nulla
+    if (sourceColumnId === destColumnId) {
+      return;
+    }
 
+    // Aggiornamento ottimistico
     setColumns((prevColumns) => {
-      // Trova la colonna di origine
-      const activeColumnIndex = prevColumns.findIndex((col) =>
-        col.tasks.some((t) => t.task_id === activeId)
-      );
-
-      if (activeColumnIndex === -1) return prevColumns;
-
-      const activeColumn = prevColumns[activeColumnIndex];
-      const activeTask = activeColumn.tasks.find((t) => t.task_id === activeId);
-
-      if (!activeTask) return prevColumns;
-
-      // Trova la colonna di destinazione (può essere droppato su task o colonna)
-      let overColumnIndex = prevColumns.findIndex((col) =>
-        col.tasks.some((t) => t.task_id === overId)
-      );
-
-      // Se non trovato nei task, potrebbe essere l'ID della colonna stessa
-      if (overColumnIndex === -1) {
-        overColumnIndex = prevColumns.findIndex(
-          (col) => col.task_status_id === overId
-        );
-      }
-
-      if (overColumnIndex === -1) return prevColumns;
-
       const newColumns = [...prevColumns];
 
+      // Trova la colonna di origine
+      const sourceColumnIndex = newColumns.findIndex(
+        (col) => col.task_status_id === sourceColumnId
+      );
+
+      // Trova la colonna di destinazione
+      const destColumnIndex = newColumns.findIndex(
+        (col) => col.task_status_id === destColumnId
+      );
+
+      if (sourceColumnIndex === -1 || destColumnIndex === -1)
+        return prevColumns;
+
+      const sourceCol = newColumns[sourceColumnIndex];
+      const destCol = newColumns[destColumnIndex];
+
+      // Trova il task nella colonna di origine
+      const activeTask = sourceCol.tasks.find((t) => t.task_id === taskId);
+      if (!activeTask) return prevColumns;
+
       // Rimuovi dalla colonna di origine
-      newColumns[activeColumnIndex] = {
-        ...newColumns[activeColumnIndex],
-        tasks: newColumns[activeColumnIndex].tasks.filter(
-          (t) => t.task_id !== activeId
-        ),
-      };
+      const newSourceTasks = Array.from(sourceCol.tasks);
+      newSourceTasks.splice(source.index, 1);
 
       // Aggiungi alla colonna di destinazione
       const updatedTask = {
         ...activeTask,
-        task_status_id: newColumns[overColumnIndex].task_status_id,
+        task_status_id: destColumnId,
+      };
+      const newDestTasks = Array.from(destCol.tasks);
+      newDestTasks.splice(destination.index, 0, updatedTask);
+
+      newColumns[sourceColumnIndex] = {
+        ...sourceCol,
+        tasks: newSourceTasks,
       };
 
-      // Trova la posizione di inserimento
-      const overTask = newColumns[overColumnIndex].tasks.find(
-        (t) => t.task_id === overId
-      );
-
-      if (overTask) {
-        const overIndex = newColumns[overColumnIndex].tasks.indexOf(overTask);
-        const newTasks = [...newColumns[overColumnIndex].tasks];
-        newTasks.splice(overIndex, 0, updatedTask);
-        newColumns[overColumnIndex] = {
-          ...newColumns[overColumnIndex],
-          tasks: newTasks,
-        };
-      } else {
-        // Aggiungi alla fine se droppato sulla colonna
-        newColumns[overColumnIndex] = {
-          ...newColumns[overColumnIndex],
-          tasks: [...newColumns[overColumnIndex].tasks, updatedTask],
-        };
-      }
+      newColumns[destColumnIndex] = {
+        ...destCol,
+        tasks: newDestTasks,
+      };
 
       return newColumns;
     });
+
+    // Chiamata axios per aggiornare lo status del task nel backend
+    axios
+      .put(`/project/UPDATE/update-task-status`, {
+        task_id: taskId,
+        task_status_id: destColumnId,
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Task aggiornato con successo!",
+            description: "Il task è stato aggiornato con successo",
+            color: "success",
+          });
+          setUpdate(!update);
+        } else {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Errore durante l'aggiornamento del task",
+            description: "Controlla i dati inseriti e riprova",
+            color: "danger",
+          });
+          setUpdate(!update);
+        }
+      })
+      .catch((error) => {
+        console.error(
+          "Errore nell'aggiornamento dello status del task:",
+          error
+        );
+        addToast({
+          timeout: 3000,
+          shouldShowTimeoutProgress: true,
+          title: "Errore durante l'aggiornamento del task",
+          description: "Non è stato possibile aggiornare lo status del task",
+          color: "danger",
+        });
+        setUpdate(!update);
+      });
   };
 
   const handleAddTask = (columnId: number) => {
@@ -601,6 +602,14 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
     setTaskDetailOpen(true);
   };
 
+  if (loading !== 0) {
+    return (
+      <div className="flex justify-center items-center h-84">
+        <Spinner variant="wave" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header con azioni */}
@@ -622,12 +631,7 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
 
       {/* Board Kanban */}
       <div className="overflow-x-auto pb-4">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
+        <DragDropContext onDragEnd={handleDragEnd}>
           <div className="flex gap-4 min-w-max">
             {columns.map((column) => (
               <KanbanColumnCard
@@ -640,38 +644,7 @@ export default function KanbanView({ projectId }: KanbanViewProps) {
               />
             ))}
           </div>
-
-          <DragOverlay
-            dropAnimation={{
-              duration: 200,
-              easing: "cubic-bezier(0.25, 1, 0.5, 1)",
-            }}
-          >
-            {activeTask ? (
-              <div
-                className="w-80 bg-white border-2 border-primary rounded-xl p-3 shadow-2xl"
-                style={{
-                  transform: "scale(1.05)",
-                  boxShadow:
-                    "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon
-                    icon="solar:move-linear"
-                    className="text-primary text-lg animate-pulse"
-                  />
-                  <h4 className="font-medium text-sm text-default-900">
-                    {activeTask.title}
-                  </h4>
-                </div>
-                <p className="text-xs text-default-500 line-clamp-2">
-                  {activeTask.description}
-                </p>
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+        </DragDropContext>
       </div>
 
       {/* Modal Nuovo Task */}

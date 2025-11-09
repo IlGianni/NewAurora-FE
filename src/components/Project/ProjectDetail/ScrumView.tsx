@@ -1528,8 +1528,8 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                           >
                             {TaskPriorities.map((priority) => (
                               <SelectItem
+                                color={priority.color as any}
                                 key={priority.task_priority_id}
-                                color="primary"
                               >
                                 {priority.name.charAt(0).toUpperCase() +
                                   priority.name.slice(1)}
@@ -1566,7 +1566,10 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                         >
                           <>
                             {sprints.map((sprint) => (
-                              <SelectItem key={sprint.sprint_id}>
+                              <SelectItem
+                                key={sprint.sprint_id}
+                                color="primary"
+                              >
                                 {sprint.name.charAt(0).toUpperCase() +
                                   sprint.name.slice(1)}
                               </SelectItem>
@@ -1895,6 +1898,8 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
 
                   {/* Kanban Board */}
                   <SprintKanbanView
+                    setUpdate={setUpdate}
+                    update={update}
                     tasks={activeSprint.tasks}
                     taskStatuses={TaskStatuses}
                     onTasksChange={(updatedTasks) => {
