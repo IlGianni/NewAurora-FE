@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ProjectDetailTask from "../../components/Project/ProjectDetail/ProjectDetailTask";
+import VaultView from "../../components/Project/ProjectDetail/VaultView";
 import type { Project } from "../../types";
 import axios from "axios";
 
@@ -194,15 +195,12 @@ export default function ProjectDetail() {
           key="vault"
           title={
             <div className="flex items-center gap-2">
-              <Icon
-                icon="solar:users-group-rounded-linear"
-                className="text-lg"
-              />
+              <Icon icon="solar:lock-password-linear" className="text-lg" />
               <span>Vault</span>
             </div>
           }
         >
-          <h1>Vault</h1>
+          {project && <VaultView projectId={project.project_id} />}
         </Tab>
       </Tabs>
     </div>

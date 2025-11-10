@@ -122,3 +122,28 @@ export interface Sprint {
   created_by: User;
   tasks: Task[];
 }
+
+// Interfaccia per le entry del Vault
+export interface VaultEntry {
+  vault_id: number;
+  project_id: number;
+  key: string;
+  value: string;
+  is_sensitive: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Interfaccia per la cronologia del Vault
+export interface VaultHistory {
+  vault_history_id: number;
+  vault_id: number;
+  key: string;
+  value: string;
+  is_sensitive: boolean;
+  changed_at: string;
+  changed_by_id?: number;
+}
+
+// Tipo per il tipo di valore del Vault
+export type VaultValueType = "sensitive" | "normal";
