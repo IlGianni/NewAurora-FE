@@ -33,6 +33,7 @@ import {
 import { Icon } from "@iconify/react";
 import axios from "axios";
 import type { VaultEntry, VaultValueType } from "../../../types";
+import GitHubSecretSyncPanel from "../../GitHubSecretSyncPanel";
 
 interface VaultViewProps {
   projectId: number;
@@ -87,6 +88,11 @@ export default function VaultView({ projectId }: VaultViewProps) {
     isOpen: isExportModalOpen,
     onOpen: onExportModalOpen,
     onClose: onExportModalClose,
+  } = useDisclosure();
+  const {
+    isOpen: isGitHubModalOpen,
+    onOpen: onGitHubModalOpen,
+    onClose: onGitHubModalClose,
   } = useDisclosure();
 
   // Stati per form
@@ -152,6 +158,19 @@ export default function VaultView({ projectId }: VaultViewProps) {
   useEffect(() => {
     fetchVaultEntries();
   }, [fetchVaultEntries]);
+
+  // Controlla se deve aprire il modal GitHub dopo login OAuth
+  useEffect(() => {
+    const shouldOpenModal = sessionStorage.getItem("github_open_modal");
+    if (shouldOpenModal === "true") {
+      // Rimuovi il flag
+      sessionStorage.removeItem("github_open_modal");
+      // Apri il modal dopo un breve delay per assicurarsi che il componente sia montato
+      setTimeout(() => {
+        onGitHubModalOpen();
+      }, 500);
+    }
+  }, [onGitHubModalOpen]);
 
   // Gestione shortcut da tastiera
   useEffect(() => {
@@ -795,6 +814,16 @@ ${k8sEntries.join("\n")}`;
               onPress={onAddModalOpen}
             >
               Nuova Entry
+            </Button>
+          </Tooltip>
+          <Tooltip content="Sincronizza secret con GitHub Actions">
+            <Button
+              color="default"
+              variant="bordered"
+              startContent={<Icon icon="mdi:github" />}
+              onPress={onGitHubModalOpen}
+            >
+              GitHub Actions
             </Button>
           </Tooltip>
         </div>
@@ -1631,6 +1660,38 @@ ${k8sEntries.join("\n")}`;
               onPress={downloadExport}
             >
               Scarica File
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal GitHub Actions */}
+      <Modal
+        isOpen={isGitHubModalOpen}
+        onClose={onGitHubModalClose}
+        size="2xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <Icon icon="mdi:github" className="text-xl" />
+              <span>Sincronizza Secret con GitHub Actions</span>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <GitHubSecretSyncPanel
+              secretsList={vaultEntries.map((entry) => ({
+                keyName: entry.key,
+                value: entry.value,
+                isSensitive: entry.is_sensitive,
+              }))}
+              existingTokenStored={false}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onGitHubModalClose}>
+              Chiudi
             </Button>
           </ModalFooter>
         </ModalContent>

@@ -14,6 +14,16 @@ export default function ProjectDetail() {
   // Stato di loading
   const [isLoading, setIsLoading] = useState(true);
   const [project, setProject] = useState<Project | null>(null);
+  const [selectedTab, setSelectedTab] = useState<string>("overview");
+
+  // Controlla hash nell'URL per selezionare tab (es. #vault)
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash === "vault") {
+      setSelectedTab("vault");
+    }
+  }, []);
+
   useEffect(() => {
     setIsLoading(true);
     axios
@@ -138,6 +148,8 @@ export default function ProjectDetail() {
         aria-label="Project Details"
         variant="bordered"
         color="primary"
+        selectedKey={selectedTab}
+        onSelectionChange={(key) => setSelectedTab(key as string)}
         classNames={{
           tabList:
             "bg-white border border-default-200 rounded-3xl p-2 overflow-hidden",

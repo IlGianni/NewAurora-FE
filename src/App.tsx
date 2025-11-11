@@ -1,5 +1,6 @@
 import AuthPage from "./pages/authentication/AuthPage";
 import ForgotPassword from "./pages/authentication/ForgotPassword";
+import GitHubCallback from "./pages/authentication/GitHubCallback";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Settings from "./pages/settings/Settings";
 import Projects from "./pages/projects/Projects";
@@ -60,6 +61,9 @@ function App() {
   return (
     <AppLayout isAuth={isAuth}>
       <Routes>
+        {/* Route callback OAuth - accessibile sempre */}
+        <Route path="/auth/github/callback" element={<GitHubCallback />} />
+
         {!isAuth ? (
           <>
             <Route path="/" element={<AuthPage />} />
