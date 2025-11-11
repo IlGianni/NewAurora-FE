@@ -8,9 +8,12 @@ import {
   Skeleton,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useSearchParams } from "react-router-dom";
+import axios from "axios";
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Simula il caricamento dei dati
   useEffect(() => {
@@ -20,6 +23,60 @@ export default function Dashboard() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Gestisci callback OAuth GitHub
+  useEffect(() => {
+    const oauth = searchParams.get("oauth");
+    const provider = searchParams.get("provider");
+    const error = searchParams.get("error");
+
+    if (oauth === "success" && provider === "github") {
+      // Login GitHub completato con successo
+      console.log("✅ Login GitHub OAuth completato");
+
+      // Verifica stato GitHub per vault
+      checkGitHubAuthStatus();
+
+      // Pulisci i parametri dalla URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("oauth");
+      newSearchParams.delete("provider");
+      setSearchParams(newSearchParams, { replace: true });
+    } else if (error) {
+      // Gestisci errore OAuth
+      const message = searchParams.get("message");
+      console.error("❌ Errore OAuth:", error, message);
+
+      // Pulisci i parametri dalla URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("error");
+      newSearchParams.delete("message");
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  // Verifica stato autenticazione GitHub per vault
+  const checkGitHubAuthStatus = async () => {
+    try {
+      const response = await axios.get("/github/auth/status", {
+        withCredentials: true,
+      });
+
+      if (response.data.authenticated) {
+        console.log("✅ GitHub collegato per vault:", response.data.user);
+        // Dispatch evento per notificare componenti interessati
+        window.dispatchEvent(
+          new CustomEvent("github-vault-connected", {
+            detail: response.data,
+          })
+        );
+      } else {
+        console.log("ℹ️ GitHub non collegato per vault");
+      }
+    } catch (error) {
+      console.warn("⚠️ Impossibile verificare stato GitHub:", error);
+    }
+  };
 
   return (
     <div className="space-y-6">

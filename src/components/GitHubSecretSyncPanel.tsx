@@ -349,60 +349,112 @@ export default function GitHubSecretSyncPanel({
     }
   };
 
-  // Ascolta evento di autenticazione riuscita dalla pagina callback
+  // Ascolta evento di connessione GitHub per vault dopo login OAuth
   useEffect(() => {
-    const handleAuthSuccess = async () => {
-      // Ricarica stato autenticazione dopo login OAuth
-      const savedToken = localStorage.getItem("github_token");
-      const savedUser = localStorage.getItem("github_user");
+    const handleVaultConnected = async (event: CustomEvent) => {
+      console.log("🔵 GitHub vault connected event received:", event.detail);
 
-      if (savedToken) {
-        setGithubToken(savedToken);
-        setIsAuthenticated(true);
+      // Verifica stato GitHub dalla sessione
+      try {
+        const statusResponse = await axios.get("/github/auth/status", {
+          withCredentials: true,
+        });
 
-        // Carica user salvato
-        if (savedUser) {
-          try {
-            const userData = JSON.parse(savedUser);
-            setGithubUser(userData);
-          } catch (e) {
-            console.warn("Errore nel parsing user salvato:", e);
-          }
+        if (statusResponse.data.authenticated) {
+          setIsAuthenticated(true);
+          setGithubUser(statusResponse.data.user);
+          // NON salviamo il token in localStorage, viene gestito dalla sessione
+
+          // Fetch repos automaticamente (senza passare token)
+          await fetchReposFromSession();
         }
-
-        // Fetch repos automaticamente con il token salvato
-        await fetchRepos(savedToken);
-      } else {
-        // Se non c'è token, prova a ottenerlo dalla sessione backend
-        try {
-          const tokenResponse = await axios.get("/github/auth/token");
-          if (tokenResponse.data?.token) {
-            const token = tokenResponse.data.token;
-            localStorage.setItem("github_token", token);
-            setGithubToken(token);
-            setIsAuthenticated(true);
-
-            if (tokenResponse.data?.user) {
-              const user = tokenResponse.data.user;
-              localStorage.setItem("github_user", JSON.stringify(user));
-              setGithubUser(user);
-            }
-
-            await fetchRepos(token);
-          }
-        } catch (e) {
-          console.warn("Impossibile recuperare token dalla sessione:", e);
-        }
+      } catch (error) {
+        console.warn("⚠️ Impossibile verificare stato GitHub:", error);
       }
     };
 
+    // Ascolta anche l'evento legacy per compatibilità
+    const handleAuthSuccess = async () => {
+      await checkGitHubAuthStatus();
+    };
+
+    const vaultConnectedHandler =
+      handleVaultConnected as unknown as EventListener;
+    window.addEventListener("github-vault-connected", vaultConnectedHandler);
     window.addEventListener("github-auth-success", handleAuthSuccess);
 
     return () => {
+      window.removeEventListener(
+        "github-vault-connected",
+        vaultConnectedHandler
+      );
       window.removeEventListener("github-auth-success", handleAuthSuccess);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // fetchRepos è stabile, non serve nelle dipendenze
+  }, []);
+
+  // Verifica stato autenticazione GitHub dalla sessione
+  const checkGitHubAuthStatus = async () => {
+    try {
+      const response = await axios.get("/github/auth/status", {
+        withCredentials: true,
+      });
+
+      if (response.data.authenticated) {
+        setIsAuthenticated(true);
+        setGithubUser(response.data.user);
+        await fetchReposFromSession();
+      } else {
+        setIsAuthenticated(false);
+        setGithubUser(null);
+      }
+    } catch (error) {
+      console.warn("⚠️ Impossibile verificare stato GitHub:", error);
+      setIsAuthenticated(false);
+      setGithubUser(null);
+    }
+  };
+
+  // Fetch repos dalla sessione (senza passare token)
+  const fetchReposFromSession = async () => {
+    setIsLoadingRepos(true);
+    try {
+      const response = await axios.get("/github/repos", {
+        withCredentials: true, // IMPORTANTE: usa la sessione
+      });
+
+      if (response.data && Array.isArray(response.data)) {
+        setRepos(response.data);
+      } else if (response.data?.repos && Array.isArray(response.data.repos)) {
+        setRepos(response.data.repos);
+      } else {
+        throw new Error("Formato risposta non valido");
+      }
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        // Token mancante o non valido
+        setIsAuthenticated(false);
+        setGithubUser(null);
+        addToast({
+          timeout: 3000,
+          shouldShowTimeoutProgress: true,
+          title: "Non autenticato",
+          description: "Non sei autenticato con GitHub. Fai login prima.",
+          color: "warning",
+        });
+      } else {
+        addToast({
+          timeout: 3000,
+          shouldShowTimeoutProgress: true,
+          title: "Errore",
+          description: `Errore nel caricamento dei repository: ${error.message}`,
+          color: "danger",
+        });
+      }
+      setRepos([]);
+    } finally {
+      setIsLoadingRepos(false);
+    }
+  };
 
   // Login con PAT manuale
   const handlePATLogin = async () => {
@@ -500,78 +552,76 @@ export default function GitHubSecretSyncPanel({
     }
   };
 
-  // Fetch repos quando autenticato
-  const fetchRepos = async (token: string) => {
-    if (!token.trim()) {
-      return;
-    }
-
-    setIsLoadingRepos(true);
-    try {
-      // Prova prima con route RESTful nuova, poi fallback a legacy
-      let response;
+  // Fetch repos quando autenticato (usa sessione, non token manuale)
+  const fetchRepos = async (token?: string) => {
+    // Se viene passato un token (per compatibilità con PAT), usa quello
+    // Altrimenti usa la sessione
+    if (token && token.trim()) {
+      setIsLoadingRepos(true);
       try {
-        response = await axios.get("/github/repos", {
+        const response = await axios.get("/github/repos", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          withCredentials: true,
         });
-      } catch (e: any) {
-        if (e.response?.status === 404) {
-          // Fallback a route legacy
-          response = await axios.get("/github/GET/list-repos", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-        } else {
-          throw e;
-        }
-      }
 
-      if (response.data && Array.isArray(response.data)) {
-        setRepos(response.data);
-      } else if (response.data?.repos && Array.isArray(response.data.repos)) {
-        setRepos(response.data.repos);
-      } else {
-        throw new Error("Formato risposta non valido");
+        if (response.data && Array.isArray(response.data)) {
+          setRepos(response.data);
+        } else if (response.data?.repos && Array.isArray(response.data.repos)) {
+          setRepos(response.data.repos);
+        } else {
+          throw new Error("Formato risposta non valido");
+        }
+      } catch (error: any) {
+        addToast({
+          timeout: 3000,
+          shouldShowTimeoutProgress: true,
+          title: "Errore",
+          description: `Errore nel caricamento dei repository: ${error.message}`,
+          color: "danger",
+        });
+        setRepos([]);
+      } finally {
+        setIsLoadingRepos(false);
       }
-    } catch (error: any) {
-      addToast({
-        timeout: 3000,
-        shouldShowTimeoutProgress: true,
-        title: "Errore",
-        description: `Errore nel caricamento dei repository: ${error.message}`,
-        color: "danger",
-      });
-      setRepos([]);
-    } finally {
-      setIsLoadingRepos(false);
+    } else {
+      // Usa la sessione (per OAuth)
+      await fetchReposFromSession();
     }
   };
 
   // Fetch secrets esistenti quando viene selezionato un repo
   useEffect(() => {
-    if (selectedRepo && isAuthenticated && githubToken) {
+    if (selectedRepo && isAuthenticated) {
       fetchExistingSecrets();
     } else {
       setExistingSecrets([]);
     }
   }, [selectedRepo, isAuthenticated]);
 
-  // Fetch secrets esistenti nel repository
+  // Fetch secrets esistenti nel repository (usa sessione, non token manuale)
   const fetchExistingSecrets = async () => {
-    if (!selectedRepo || !githubToken) return;
+    if (!selectedRepo) return;
 
     setIsLoadingSecrets(true);
     try {
+      // Usa withCredentials per prendere il token dalla sessione
+      // Se c'è un token manuale (PAT), usalo, altrimenti usa la sessione
+      const config: any = {
+        withCredentials: true,
+      };
+
+      if (githubToken && githubToken.trim()) {
+        // Usa token manuale se disponibile (PAT)
+        config.headers = {
+          Authorization: `Bearer ${githubToken}`,
+        };
+      }
+
       const response = await axios.get(
         `/github/repos/${encodeURIComponent(selectedRepo)}/secrets`,
-        {
-          headers: {
-            Authorization: `Bearer ${githubToken}`,
-          },
-        }
+        config
       );
 
       if (response.data && Array.isArray(response.data)) {
@@ -654,7 +704,19 @@ export default function GitHubSecretSyncPanel({
 
   // Esegue il push multiplo
   const handlePushKeys = async () => {
-    if (selectedKeys.size === 0 || !selectedRepo || !githubToken) {
+    if (selectedKeys.size === 0 || !selectedRepo) {
+      return;
+    }
+
+    // Verifica autenticazione: deve essere autenticato (OAuth o PAT)
+    if (!isAuthenticated) {
+      addToast({
+        timeout: 3000,
+        shouldShowTimeoutProgress: true,
+        title: "Errore",
+        description: "Non sei autenticato con GitHub",
+        color: "danger",
+      });
       return;
     }
 
@@ -688,6 +750,18 @@ export default function GitHubSecretSyncPanel({
         );
       }
 
+      // Prepara configurazione: usa token manuale se disponibile (PAT), altrimenti sessione
+      const config: any = {
+        withCredentials: true,
+      };
+
+      if (githubToken && githubToken.trim()) {
+        // Usa token manuale se disponibile (PAT)
+        config.headers = {
+          Authorization: `Bearer ${githubToken}`,
+        };
+      }
+
       // Usa route RESTful bulk per push multiplo
       let response;
       try {
@@ -696,11 +770,7 @@ export default function GitHubSecretSyncPanel({
             repo
           )}/secrets/bulk`,
           { secrets },
-          {
-            headers: {
-              Authorization: `Bearer ${githubToken}`,
-            },
-          }
+          config
         );
       } catch (e: any) {
         // Fallback: se bulk non esiste, fai chiamate singole
@@ -711,14 +781,10 @@ export default function GitHubSecretSyncPanel({
                 repo
               )}/secrets`,
               {
-                secretName: secret.name,
-                secretValue: secret.value,
+                name: secret.name,
+                value: secret.value,
               },
-              {
-                headers: {
-                  Authorization: `Bearer ${githubToken}`,
-                },
-              }
+              config
             );
           });
           await Promise.all(pushPromises);

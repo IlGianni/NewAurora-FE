@@ -1,14 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Avatar, Button, Input, ScrollShadow, Spacer } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 
 import Sidebar from "./Sidebar";
 import { ProjectManagerIcon } from "./ProjectManagerIcon";
 import { sectionItems } from "./sidebar-items";
 import AgentPopup, { AgentToggleButton } from "./AgentPopup/AgentPopup";
+import { useLogout } from "../../hooks/useLogout";
+import type { User } from "../../types";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -20,6 +23,9 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
   const location = useLocation();
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const [isAgentFullscreen, setIsAgentFullscreen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(false);
+  const { logout, isLoggingOut } = useLogout();
 
   // Determina la chiave attiva basata sul pathname corrente
   const getActiveKey = () => {
@@ -48,9 +54,65 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
     navigate(route);
   };
 
-  const handleLogout = () => {
-    // Qui implementerai la logica di logout
-    console.log("Logout clicked");
+  // Carica i dati utente quando l'autenticazione cambia
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!isAuth) {
+        setUser(null);
+        return;
+      }
+
+      setIsLoadingUser(true);
+      try {
+        const response = await axios.get("/authentication/GET/get-session-data", {
+          withCredentials: true,
+        });
+
+        if (response.data && response.data.user) {
+          setUser(response.data.user);
+        } else if (response.data) {
+          // Se i dati utente sono direttamente nella risposta
+          setUser(response.data);
+        }
+      } catch (error) {
+        console.error("Errore nel recupero dei dati utente:", error);
+        setUser(null);
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    fetchUserData();
+  }, [isAuth]);
+
+  // Ascolta evento logout per resettare i dati utente
+  useEffect(() => {
+    const handleLogout = () => {
+      setUser(null);
+    };
+
+    window.addEventListener("user-logout", handleLogout);
+    return () => {
+      window.removeEventListener("user-logout", handleLogout);
+    };
+  }, []);
+
+  // Genera le iniziali per l'avatar
+  const getInitials = (name: string, surname: string) => {
+    const firstInitial = name ? name.charAt(0).toUpperCase() : "";
+    const lastInitial = surname ? surname.charAt(0).toUpperCase() : "";
+    return firstInitial + lastInitial;
+  };
+
+  // Nome completo dell'utente
+  const getUserDisplayName = () => {
+    if (!user) return "Utente";
+    if (user.name && user.surname) {
+      return `${user.name} ${user.surname}`;
+    }
+    if (user.name) return user.name;
+    if (user.surname) return user.surname;
+    return "Utente";
   };
 
   return (
@@ -76,10 +138,14 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
             <Avatar
               isBordered
               size="sm"
-              src="https://i.pravatar.cc/150?u=a04258114e29026708c"
+              src={user?.email ? `https://i.pravatar.cc/150?u=${user.email}` : undefined}
+              name={user ? getInitials(user.name || "", user.surname || "") : "U"}
+              showFallback
             />
             <div className="flex flex-col">
-              <p className="text-small text-default-600 font-medium">Utente</p>
+              <p className="text-small text-default-600 font-medium">
+                {isLoadingUser ? "Caricamento..." : getUserDisplayName()}
+              </p>
               <p className="text-tiny text-default-400">Project Manager</p>
             </div>
           </div>
@@ -135,9 +201,11 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
               />
             }
             variant="light"
-            onClick={handleLogout}
+            onClick={logout}
+            isLoading={isLoggingOut}
+            isDisabled={isLoggingOut}
           >
-            Logout
+            {isLoggingOut ? "Disconnessione..." : "Logout"}
           </Button>
         </div>
       </div>

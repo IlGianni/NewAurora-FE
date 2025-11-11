@@ -1,6 +1,8 @@
 import AuthPage from "./pages/authentication/AuthPage";
 import ForgotPassword from "./pages/authentication/ForgotPassword";
 import GitHubCallback from "./pages/authentication/GitHubCallback";
+import GoogleCallback from "./pages/authentication/GoogleCallback";
+import GitHubAuthCallback from "./pages/authentication/GitHubAuthCallback";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Settings from "./pages/settings/Settings";
 import Projects from "./pages/projects/Projects";
@@ -51,7 +53,24 @@ function App() {
       checkSession();
     }, 10 * 60 * 1000);
 
-    return () => clearInterval(sessionInterval);
+    // Ascolta evento logout per aggiornare lo stato di autenticazione
+    const handleLogout = () => {
+      setIsAuth(false);
+    };
+
+    // Ascolta evento login per aggiornare lo stato di autenticazione (OAuth)
+    const handleLogin = async () => {
+      await checkSession();
+    };
+
+    window.addEventListener("user-logout", handleLogout);
+    window.addEventListener("user-login", handleLogin);
+
+    return () => {
+      clearInterval(sessionInterval);
+      window.removeEventListener("user-logout", handleLogout);
+      window.removeEventListener("user-login", handleLogin);
+    };
   }, []);
 
   if (isLoading) {
@@ -63,6 +82,11 @@ function App() {
       <Routes>
         {/* Route callback OAuth - accessibile sempre */}
         <Route path="/auth/github/callback" element={<GitHubCallback />} />
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
+        <Route
+          path="/auth/github/auth-callback"
+          element={<GitHubAuthCallback />}
+        />
 
         {!isAuth ? (
           <>

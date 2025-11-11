@@ -11,9 +11,11 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTheme } from "../../contexts";
+import { useLogout } from "../../hooks/useLogout";
 
 export default function Settings() {
   const { theme, toggleTheme } = useTheme();
+  const { logout, isLoggingOut } = useLogout();
 
   return (
     <div className="space-y-6">
@@ -224,6 +226,31 @@ export default function Settings() {
           </div>
         </CardHeader>
         <CardBody className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Logout</p>
+              <p className="text-small text-default-500">
+                Disconnetti il tuo account e torna alla schermata di login
+              </p>
+            </div>
+            <Button
+              color="danger"
+              variant="flat"
+              onPress={logout}
+              isLoading={isLoggingOut}
+              isDisabled={isLoggingOut}
+              startContent={
+                !isLoggingOut && (
+                  <Icon icon="mdi:logout" width={20} />
+                )
+              }
+            >
+              {isLoggingOut ? "Disconnessione..." : "Logout"}
+            </Button>
+          </div>
+          
+          <Divider />
+          
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Elimina Account</p>
