@@ -1,18 +1,44 @@
-import { Button, Chip, Skeleton, Tab, Tabs } from "@heroui/react";
+import {
+  Button,
+  Chip,
+  ModalHeader,
+  ModalContent,
+  Modal,
+  Skeleton,
+  Tab,
+  Tabs,
+  ModalBody,
+  ModalFooter,
+  Input,
+  useDisclosure,
+  Textarea,
+  DatePicker,
+  Select,
+  SelectItem,
+  addToast,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ProjectDetailTask from "../../components/Project/ProjectDetail/ProjectDetailTask";
-import type { Project } from "../../types";
+import type { Project, ProjectStatus } from "../../types";
 import axios from "axios";
+import Dashboard from "../../components/Project/ProjectDetail/Dashboard";
+import Team from "../../components/Project/ProjectDetail/Team";
+import { parseDate } from "@internationalized/date";
+import { I18nProvider } from "@react-aria/i18n";
 
 export default function ProjectDetail() {
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   // Stato di loading
   const [isLoading, setIsLoading] = useState(true);
   const [project, setProject] = useState<Project | null>(null);
+  const [projectData, setProjectData] = useState<Project | null>(null);
+  const [projectStatuses, setProjectStatuses] = useState<ProjectStatus[]>([]);
+  const [update, setUpdate] = useState(false);
   useEffect(() => {
     setIsLoading(true);
     axios
@@ -23,11 +49,69 @@ export default function ProjectDetail() {
       })
       .then((res) => {
         if (res.status === 200) {
+          console.log(res.data.project);
           setProject(res.data.project);
           setIsLoading(false);
         }
       });
-  }, [id]);
+
+    axios.get(`/project/GET/get-project-statuses`, {}).then((res) => {
+      if (res.status === 200) {
+        setProjectStatuses(res.data.project_statuses);
+      }
+    });
+  }, [id, update]);
+
+  const handleUpdateProject = async () => {
+    await axios
+      .put(`/project/UPDATE/update-project`, {
+        project_data: projectData,
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Progetto aggiornato con successo!",
+            description: "Il progetto è stato aggiornato con successo",
+            color: "success",
+          });
+          setUpdate(!update);
+        } else {
+          addToast({
+            timeout: 3000,
+            shouldShowTimeoutProgress: true,
+            title: "Errore durante l'aggiornamento del progetto",
+            description: "Controlla i dati inseriti e riprova",
+            color: "danger",
+          });
+        }
+      })
+      .catch(() => {
+        addToast({
+          timeout: 3000,
+          shouldShowTimeoutProgress: true,
+          title: "Errore durante l'aggiornamento del progetto",
+          description: "Controlla i dati inseriti e riprova",
+          color: "danger",
+        });
+      });
+  };
+
+  function handleOpenModal() {
+    setProjectData({
+      ...project!,
+      start_date: project!.start_date
+        ? new Date(project!.start_date).toISOString().split("T")[0]
+        : null,
+      end_date: project!.end_date
+        ? new Date(project!.end_date).toISOString().split("T")[0]
+        : null,
+    });
+    onOpen();
+  }
+
+  console.log(projectData);
 
   return (
     <div className="space-y-8 flex flex-col gap-2">
@@ -78,10 +162,121 @@ export default function ProjectDetail() {
                 size="sm"
                 color="primary"
                 startContent={<Icon icon="solar:settings-linear" />}
+                onPress={handleOpenModal}
               >
                 Impostazioni
               </Button>
             </div>
+
+            {/* Modal Nuovo Task */}
+            <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+              <ModalContent>
+                <ModalHeader>Modifica Progetto</ModalHeader>
+                <ModalBody>
+                  <div className="space-y-4">
+                    <Input
+                      label="Titolo"
+                      placeholder="Es: Progetto di test"
+                      value={projectData?.name || ""}
+                      onChange={(e) =>
+                        setProjectData({
+                          ...projectData!,
+                          name: e.target.value,
+                        })
+                      }
+                    />
+                    <Textarea
+                      label="Descrizione"
+                      placeholder="Descrivi il progetto..."
+                      value={projectData?.description || ""}
+                      onChange={(e) =>
+                        setProjectData({
+                          ...projectData!,
+                          description: e.target.value,
+                        })
+                      }
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <I18nProvider locale="it-IT">
+                        <DatePicker
+                          className="cursor-pointer"
+                          label="Data Inizio"
+                          value={
+                            projectData?.start_date
+                              ? (parseDate(projectData.start_date) as any)
+                              : null
+                          }
+                          onChange={(e) => {
+                            if (e) {
+                              const year = e.year.toString();
+                              const month = e.month.toString().padStart(2, "0");
+                              const day = e.day.toString().padStart(2, "0");
+                              setProjectData({
+                                ...projectData!,
+                                start_date: `${year}-${month}-${day}`,
+                              });
+                            }
+                          }}
+                        />
+                      </I18nProvider>
+                      <I18nProvider locale="it-IT">
+                        <DatePicker
+                          label="Data Fine"
+                          value={
+                            projectData?.end_date
+                              ? (parseDate(projectData.end_date) as any)
+                              : null
+                          }
+                          onChange={(e) => {
+                            if (e) {
+                              const year = e.year.toString();
+                              const month = e.month.toString().padStart(2, "0");
+                              const day = e.day.toString().padStart(2, "0");
+                              setProjectData({
+                                ...projectData!,
+                                end_date: `${year}-${month}-${day}`,
+                              });
+                            }
+                          }}
+                        />
+                      </I18nProvider>
+                    </div>
+                    <Select
+                      label="Stato del Progetto"
+                      placeholder="Seleziona uno stato"
+                      selectedKeys={[
+                        projectData?.project_status_id?.toString() || "",
+                      ]}
+                      onSelectionChange={(keys) => {
+                        const selected = Array.from(keys)[0] as string;
+                        setProjectData({
+                          ...projectData!,
+                          project_status_id: parseInt(selected),
+                        });
+                      }}
+                    >
+                      {projectStatuses.map((status) => (
+                        <SelectItem
+                          color={status.color as any}
+                          key={status.project_status_id}
+                        >
+                          {status.name.charAt(0).toUpperCase() +
+                            status.name.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+                </ModalBody>
+                <ModalFooter>
+                  <Button variant="light" onPress={onClose}>
+                    Annulla
+                  </Button>
+                  <Button color="primary" onPress={handleUpdateProject}>
+                    Modifica Progetto
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
 
             {/* Informazioni progetto */}
             <div className="space-y-4">
@@ -152,7 +347,7 @@ export default function ProjectDetail() {
             </div>
           }
         >
-          <h1>Panoramica</h1>
+          <Dashboard project={project} />
         </Tab>
         <Tab
           key="tasks"
@@ -188,7 +383,7 @@ export default function ProjectDetail() {
             </div>
           }
         >
-          <h1>Team</h1>
+          <Team />
         </Tab>
         <Tab
           key="vault"

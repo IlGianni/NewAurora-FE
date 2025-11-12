@@ -44,6 +44,7 @@ import { useEffect, useState } from "react";
 import type { Sprint, Task, TaskPriority, TaskStatus } from "../../../types";
 import SprintKanbanView from "./SprintKanbanView";
 import { parseDate } from "@internationalized/date";
+import { I18nProvider } from "@react-aria/i18n";
 
 interface ScrumViewProps {
   projectId: number;
@@ -1620,41 +1621,45 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                           }
                         />
                         <div className="grid grid-cols-2 gap-4">
-                          <DatePicker
-                            className="cursor-pointer"
-                            label="Data Inizio"
-                            value={parseDate(newSprint.start_date) as any}
-                            onChange={(e) => {
-                              if (e) {
-                                const year = e.year.toString();
-                                const month = e.month
-                                  .toString()
-                                  .padStart(2, "0");
-                                const day = e.day.toString().padStart(2, "0");
-                                setNewSprint({
-                                  ...newSprint,
-                                  start_date: `${year}-${month}-${day}`,
-                                });
-                              }
-                            }}
-                          />
-                          <DatePicker
-                            label="Data Fine"
-                            value={parseDate(newSprint.end_date) as any}
-                            onChange={(e) => {
-                              if (e) {
-                                const year = e.year.toString();
-                                const month = e.month
-                                  .toString()
-                                  .padStart(2, "0");
-                                const day = e.day.toString().padStart(2, "0");
-                                setNewSprint({
-                                  ...newSprint,
-                                  end_date: `${year}-${month}-${day}`,
-                                });
-                              }
-                            }}
-                          />
+                          <I18nProvider locale="it-IT">
+                            <DatePicker
+                              className="cursor-pointer"
+                              label="Data Inizio"
+                              value={parseDate(newSprint.start_date) as any}
+                              onChange={(e) => {
+                                if (e) {
+                                  const year = e.year.toString();
+                                  const month = e.month
+                                    .toString()
+                                    .padStart(2, "0");
+                                  const day = e.day.toString().padStart(2, "0");
+                                  setNewSprint({
+                                    ...newSprint,
+                                    start_date: `${year}-${month}-${day}`,
+                                  });
+                                }
+                              }}
+                            />
+                          </I18nProvider>
+                          <I18nProvider locale="it-IT">
+                            <DatePicker
+                              label="Data Fine"
+                              value={parseDate(newSprint.end_date) as any}
+                              onChange={(e) => {
+                                if (e) {
+                                  const year = e.year.toString();
+                                  const month = e.month
+                                    .toString()
+                                    .padStart(2, "0");
+                                  const day = e.day.toString().padStart(2, "0");
+                                  setNewSprint({
+                                    ...newSprint,
+                                    end_date: `${year}-${month}-${day}`,
+                                  });
+                                }
+                              }}
+                            />
+                          </I18nProvider>
                         </div>
                       </div>
                     </ModalBody>
@@ -1705,43 +1710,49 @@ export default function ScrumView({ projectId }: ScrumViewProps) {
                           }
                         />
                         <div className="grid grid-cols-2 gap-4">
-                          <DatePicker
-                            className="cursor-pointer"
-                            label="Data Inizio"
-                            value={
-                              parseDate(editSprint?.start_date || "") as any
-                            }
-                            onChange={(e) => {
-                              if (e) {
-                                const year = e.year.toString();
-                                const month = e.month
-                                  .toString()
-                                  .padStart(2, "0");
-                                const day = e.day.toString().padStart(2, "0");
-                                setEditSprint({
-                                  ...editSprint,
-                                  start_date: `${year}-${month}-${day}`,
-                                });
+                          <I18nProvider locale="it-IT">
+                            <DatePicker
+                              className="cursor-pointer"
+                              label="Data Inizio"
+                              value={
+                                parseDate(editSprint?.start_date || "") as any
                               }
-                            }}
-                          />
-                          <DatePicker
-                            label="Data Fine"
-                            value={parseDate(editSprint?.end_date || "") as any}
-                            onChange={(e) => {
-                              if (e) {
-                                const year = e.year.toString();
-                                const month = e.month
-                                  .toString()
-                                  .padStart(2, "0");
-                                const day = e.day.toString().padStart(2, "0");
-                                setEditSprint({
-                                  ...editSprint,
-                                  end_date: `${year}-${month}-${day}`,
-                                });
+                              onChange={(e) => {
+                                if (e) {
+                                  const year = e.year.toString();
+                                  const month = e.month
+                                    .toString()
+                                    .padStart(2, "0");
+                                  const day = e.day.toString().padStart(2, "0");
+                                  setEditSprint({
+                                    ...editSprint,
+                                    start_date: `${year}-${month}-${day}`,
+                                  });
+                                }
+                              }}
+                            />
+                          </I18nProvider>
+                          <I18nProvider locale="it-IT">
+                            <DatePicker
+                              label="Data Fine"
+                              value={
+                                parseDate(editSprint?.end_date || "") as any
                               }
-                            }}
-                          />
+                              onChange={(e) => {
+                                if (e) {
+                                  const year = e.year.toString();
+                                  const month = e.month
+                                    .toString()
+                                    .padStart(2, "0");
+                                  const day = e.day.toString().padStart(2, "0");
+                                  setEditSprint({
+                                    ...editSprint,
+                                    end_date: `${year}-${month}-${day}`,
+                                  });
+                                }
+                              }}
+                            />
+                          </I18nProvider>
                         </div>
                       </div>
                     </ModalBody>
