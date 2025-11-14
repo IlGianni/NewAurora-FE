@@ -3,23 +3,27 @@ import {
   Card,
   CardBody,
   CardHeader,
-  Switch,
   Divider,
   Button,
   Input,
   Avatar,
   Skeleton,
   addToast,
+  RadioGroup,
+  Tabs,
+  Tab,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useTheme } from "../../contexts";
 import { useLogout } from "../../hooks/useLogout";
 import axios from "axios";
 import type { User } from "../../types";
+import { ThemeCustomRadio } from "../../components/ThemeCustomRadio";
 
 export default function Settings() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { logout, isLoggingOut } = useLogout();
+  const [selectedTab, setSelectedTab] = useState<string>("profile");
 
   // Stato per i dati utente
   const [user, setUser] = useState<User | null>(null);
@@ -390,348 +394,406 @@ export default function Settings() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Impostazioni</h1>
           <p className="text-default-500 mt-2">
-            Gestisci le tue preferenze e configurazioni
+            Personalizza le impostazioni, le preferenze email e l'aspetto
           </p>
         </div>
       </div>
 
-      {/* Profilo Utente - Card Principale */}
-      <Card className="border-2 border-primary/20">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-4 w-full">
-            {isLoadingUser ? (
-              <Skeleton className="rounded-full w-16 h-16" />
-            ) : (
-              <div className="relative group">
-                <div
-                  className="cursor-pointer"
-                  onClick={handleAvatarClick}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleAvatarClick();
-                    }
-                  }}
-                >
-                  <Avatar
-                    isBordered
-                    size="lg"
-                    src={getProfileImageUrl()}
-                    name={
-                      user
-                        ? getInitials(user.name || "", user.surname || "")
-                        : "U"
-                    }
-                    showFallback
-                    className="w-16 h-16 transition-opacity group-hover:opacity-80"
+      {/* Tabs Navigation */}
+      <Tabs
+        aria-label="Settings Navigation"
+        selectedKey={selectedTab}
+        onSelectionChange={(key) => setSelectedTab(key as string)}
+        variant="underlined"
+        color="primary"
+        classNames={{
+          tabList:
+            "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+          cursor: "w-full bg-primary",
+          tab: "max-w-fit px-0 h-12",
+        }}
+      >
+        <Tab
+          key="profile"
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="solar:user-outline" className="text-lg" />
+              <span>Profilo</span>
+            </div>
+          }
+        >
+          <div className="mt-6 space-y-6">
+            {/* Profilo Utente - Card Principale */}
+            <Card className="border-2 border-primary/20">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-4 w-full">
+                  {isLoadingUser ? (
+                    <Skeleton className="rounded-full w-16 h-16" />
+                  ) : (
+                    <div className="relative group">
+                      <div
+                        className="cursor-pointer"
+                        onClick={handleAvatarClick}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleAvatarClick();
+                          }
+                        }}
+                      >
+                        <Avatar
+                          isBordered
+                          size="lg"
+                          src={getProfileImageUrl()}
+                          name={
+                            user
+                              ? getInitials(user.name || "", user.surname || "")
+                              : "U"
+                          }
+                          showFallback
+                          className="w-16 h-16 transition-opacity group-hover:opacity-80"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <Icon
+                            icon="solar:camera-bold"
+                            className="text-white text-xl"
+                          />
+                        </div>
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageSelect}
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    {isLoadingUser ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-5 w-48 rounded-lg" />
+                        <Skeleton className="h-4 w-64 rounded-lg" />
+                      </div>
+                    ) : (
+                      <>
+                        <h2 className="text-xl font-semibold">
+                          {user?.name && user?.surname
+                            ? `${user.name} ${user.surname}`
+                            : user?.name || user?.surname || "Utente"}
+                        </h2>
+                        <p className="text-default-500 text-sm">
+                          {user?.email || ""}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <Icon
+                    icon="solar:user-outline"
+                    className="text-primary text-2xl"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                </div>
+              </CardHeader>
+              <Divider />
+              <CardBody className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Nome"
+                    placeholder="Il tuo nome"
+                    value={profileData.name}
+                    onValueChange={(value) =>
+                      setProfileData({ ...profileData, name: value })
+                    }
+                    variant="bordered"
+                    isDisabled={isLoadingUser}
+                    startContent={
+                      <Icon
+                        icon="solar:user-bold"
+                        className="text-default-400"
+                      />
+                    }
+                  />
+                  <Input
+                    label="Cognome"
+                    placeholder="Il tuo cognome"
+                    value={profileData.surname}
+                    onValueChange={(value) =>
+                      setProfileData({ ...profileData, surname: value })
+                    }
+                    variant="bordered"
+                    isDisabled={isLoadingUser}
+                    startContent={
+                      <Icon
+                        icon="solar:user-bold"
+                        className="text-default-400"
+                      />
+                    }
+                  />
+                </div>
+                <Input
+                  label="Email"
+                  placeholder="la-tua-email@example.com"
+                  value={profileData.email}
+                  onValueChange={(value) =>
+                    setProfileData({ ...profileData, email: value })
+                  }
+                  variant="bordered"
+                  type="email"
+                  isDisabled={isLoadingUser}
+                  className="mt-4"
+                  startContent={
                     <Icon
-                      icon="solar:camera-bold"
-                      className="text-white text-xl"
+                      icon="solar:letter-bold"
+                      className="text-default-400"
+                    />
+                  }
+                />
+                <div className="flex gap-3 mt-6">
+                  {profileImageFile && (
+                    <Button
+                      color="primary"
+                      variant="flat"
+                      onPress={handleUploadImage}
+                      isLoading={isUploadingImage}
+                      isDisabled={isUploadingImage}
+                      startContent={
+                        !isUploadingImage && (
+                          <Icon icon="solar:upload-bold" width={20} />
+                        )
+                      }
+                    >
+                      {isUploadingImage ? "Caricamento..." : "Carica Immagine"}
+                    </Button>
+                  )}
+                  <Button
+                    color="primary"
+                    className="w-fit"
+                    onPress={handleSaveProfile}
+                    isLoading={isSavingProfile}
+                    isDisabled={
+                      !hasProfileChanges || isSavingProfile || isLoadingUser
+                    }
+                    startContent={
+                      !isSavingProfile && (
+                        <Icon icon="solar:check-circle-bold" width={20} />
+                      )
+                    }
+                  >
+                    {isSavingProfile ? "Salvataggio..." : "Salva Modifiche"}
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        </Tab>
+
+        <Tab
+          key="appearance"
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="solar:palette-outline" className="text-lg" />
+              <span>Aspetto</span>
+            </div>
+          }
+        >
+          <div className="mt-6 space-y-6">
+            {/* Aspetto */}
+            <Card>
+              <CardBody className="pt-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-medium mb-1 text-foreground">Tema</p>
+                    <p className="text-small text-default-500">
+                      Cambia l'aspetto dell'interfaccia
+                    </p>
+                  </div>
+                  <RadioGroup
+                    value={theme}
+                    onValueChange={(value: string) =>
+                      setTheme(value as "light" | "dark")
+                    }
+                    orientation="horizontal"
+                    className="gap-4 w-full"
+                  >
+                    <ThemeCustomRadio variant="light" value="light">
+                      Chiaro
+                    </ThemeCustomRadio>
+                    <ThemeCustomRadio variant="dark" value="dark">
+                      Scuro
+                    </ThemeCustomRadio>
+                  </RadioGroup>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        </Tab>
+
+        <Tab
+          key="security"
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="solar:shield-outline" className="text-lg" />
+              <span>Sicurezza</span>
+            </div>
+          }
+        >
+          <div className="mt-6 space-y-6">
+            {/* Sicurezza */}
+            <Card>
+              <CardBody className="pt-6">
+                <div className="space-y-4 max-w-2xl">
+                  <Input
+                    label="Password Attuale"
+                    placeholder="Inserisci la password attuale"
+                    type="password"
+                    variant="bordered"
+                    value={passwordData.currentPassword}
+                    onValueChange={(value) =>
+                      setPasswordData({
+                        ...passwordData,
+                        currentPassword: value,
+                      })
+                    }
+                    startContent={
+                      <Icon
+                        icon="solar:lock-password-bold"
+                        className="text-default-400"
+                      />
+                    }
+                  />
+                  <Input
+                    label="Nuova Password"
+                    placeholder="Inserisci la nuova password"
+                    type="password"
+                    variant="bordered"
+                    value={passwordData.newPassword}
+                    onValueChange={(value) =>
+                      setPasswordData({ ...passwordData, newPassword: value })
+                    }
+                    startContent={
+                      <Icon
+                        icon="solar:lock-password-bold"
+                        className="text-default-400"
+                      />
+                    }
+                  />
+                  <Input
+                    label="Conferma Password"
+                    placeholder="Conferma la nuova password"
+                    type="password"
+                    variant="bordered"
+                    value={passwordData.confirmPassword}
+                    onValueChange={(value) =>
+                      setPasswordData({
+                        ...passwordData,
+                        confirmPassword: value,
+                      })
+                    }
+                    startContent={
+                      <Icon
+                        icon="solar:lock-password-bold"
+                        className="text-default-400"
+                      />
+                    }
+                  />
+                  <Button
+                    color="primary"
+                    className="w-fit"
+                    onPress={handleChangePassword}
+                    isLoading={isChangingPassword}
+                    startContent={
+                      !isChangingPassword && (
+                        <Icon icon="solar:key-bold" width={20} />
+                      )
+                    }
+                  >
+                    {isChangingPassword
+                      ? "Cambio in corso..."
+                      : "Cambia Password"}
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        </Tab>
+
+        <Tab
+          key="account"
+          title={
+            <div className="flex items-center gap-2">
+              <Icon icon="solar:settings-outline" className="text-lg" />
+              <span>Account</span>
+            </div>
+          }
+        >
+          <div className="mt-6 space-y-6">
+            {/* Zona Pericolosa */}
+            <Card className="border-2 border-danger/50">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-danger/10">
+                    <Icon
+                      icon="solar:danger-triangle-outline"
+                      className="text-danger text-xl"
                     />
                   </div>
+                  <h3 className="text-lg font-semibold text-danger">
+                    Zona Pericolosa
+                  </h3>
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageSelect}
-                />
-              </div>
-            )}
-            <div className="flex-1">
-              {isLoadingUser ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-5 w-48 rounded-lg" />
-                  <Skeleton className="h-4 w-64 rounded-lg" />
+              </CardHeader>
+              <Divider />
+              <CardBody className="pt-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">Logout</p>
+                    <p className="text-small text-default-500">
+                      Disconnetti il tuo account e torna alla schermata di login
+                    </p>
+                  </div>
+                  <Button
+                    color="danger"
+                    variant="flat"
+                    onPress={logout}
+                    isLoading={isLoggingOut}
+                    isDisabled={isLoggingOut}
+                    startContent={
+                      !isLoggingOut && (
+                        <Icon icon="solar:logout-2-bold" width={20} />
+                      )
+                    }
+                  >
+                    {isLoggingOut ? "Disconnessione..." : "Logout"}
+                  </Button>
                 </div>
-              ) : (
-                <>
-                  <h2 className="text-xl font-semibold">
-                    {user?.name && user?.surname
-                      ? `${user.name} ${user.surname}`
-                      : user?.name || user?.surname || "Utente"}
-                  </h2>
-                  <p className="text-default-500 text-sm">
-                    {user?.email || ""}
-                  </p>
-                </>
-              )}
-            </div>
-            <Icon icon="solar:user-outline" className="text-primary text-2xl" />
-          </div>
-        </CardHeader>
-        <Divider />
-        <CardBody className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Nome"
-              placeholder="Il tuo nome"
-              value={profileData.name}
-              onValueChange={(value) =>
-                setProfileData({ ...profileData, name: value })
-              }
-              variant="bordered"
-              isDisabled={isLoadingUser}
-              startContent={
-                <Icon icon="solar:user-bold" className="text-default-400" />
-              }
-            />
-            <Input
-              label="Cognome"
-              placeholder="Il tuo cognome"
-              value={profileData.surname}
-              onValueChange={(value) =>
-                setProfileData({ ...profileData, surname: value })
-              }
-              variant="bordered"
-              isDisabled={isLoadingUser}
-              startContent={
-                <Icon icon="solar:user-bold" className="text-default-400" />
-              }
-            />
-          </div>
-          <Input
-            label="Email"
-            placeholder="la-tua-email@example.com"
-            value={profileData.email}
-            onValueChange={(value) =>
-              setProfileData({ ...profileData, email: value })
-            }
-            variant="bordered"
-            type="email"
-            isDisabled={isLoadingUser}
-            className="mt-4"
-            startContent={
-              <Icon icon="solar:letter-bold" className="text-default-400" />
-            }
-          />
-          <div className="flex gap-3 mt-6">
-            {profileImageFile && (
-              <Button
-                color="primary"
-                variant="flat"
-                onPress={handleUploadImage}
-                isLoading={isUploadingImage}
-                isDisabled={isUploadingImage}
-                startContent={
-                  !isUploadingImage && (
-                    <Icon icon="solar:upload-bold" width={20} />
-                  )
-                }
-              >
-                {isUploadingImage ? "Caricamento..." : "Carica Immagine"}
-              </Button>
-            )}
-            <Button
-              color="primary"
-              className="w-fit"
-              onPress={handleSaveProfile}
-              isLoading={isSavingProfile}
-              isDisabled={
-                !hasProfileChanges || isSavingProfile || isLoadingUser
-              }
-              startContent={
-                !isSavingProfile && (
-                  <Icon icon="solar:check-circle-bold" width={20} />
-                )
-              }
-            >
-              {isSavingProfile ? "Salvataggio..." : "Salva Modifiche"}
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
 
-      {/* Aspetto */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Icon
-                icon="solar:palette-outline"
-                className="text-primary text-xl"
-              />
-            </div>
-            <h3 className="text-lg font-semibold">Aspetto</h3>
-          </div>
-        </CardHeader>
-        <Divider />
-        <CardBody className="pt-6">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="font-medium">Tema</p>
-              <p className="text-small text-default-500">
-                Scegli tra tema chiaro e scuro
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Icon
-                icon={theme === "light" ? "solar:sun-bold" : "solar:moon-bold"}
-                className="text-xl text-foreground"
-              />
-              <Switch
-                isSelected={theme === "dark"}
-                onValueChange={toggleTheme}
-                color="primary"
-                size="lg"
-                classNames={{
-                  wrapper:
-                    "group-data-[selected=true]:bg-default-300 dark:group-data-[selected=true]:bg-default-400",
-                  thumb: "bg-white group-data-[selected=true]:bg-white",
-                }}
-              />
-              <span className="text-small font-medium text-foreground min-w-[60px]">
-                {theme === "dark" ? "Scuro" : "Chiaro"}
-              </span>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
+                <Divider />
 
-      {/* Sicurezza */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Icon
-                icon="solar:shield-outline"
-                className="text-primary text-xl"
-              />
-            </div>
-            <h3 className="text-lg font-semibold">Sicurezza</h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">Elimina Account</p>
+                    <p className="text-small text-default-500">
+                      Elimina permanentemente il tuo account e tutti i dati
+                      associati. Questa azione non può essere annullata.
+                    </p>
+                  </div>
+                  <Button
+                    color="danger"
+                    variant="flat"
+                    startContent={
+                      <Icon icon="solar:trash-bin-trash-bold" width={20} />
+                    }
+                  >
+                    Elimina Account
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
           </div>
-        </CardHeader>
-        <Divider />
-        <CardBody className="pt-6">
-          <div className="space-y-4 max-w-2xl">
-            <Input
-              label="Password Attuale"
-              placeholder="Inserisci la password attuale"
-              type="password"
-              variant="bordered"
-              value={passwordData.currentPassword}
-              onValueChange={(value) =>
-                setPasswordData({ ...passwordData, currentPassword: value })
-              }
-              startContent={
-                <Icon
-                  icon="solar:lock-password-bold"
-                  className="text-default-400"
-                />
-              }
-            />
-            <Input
-              label="Nuova Password"
-              placeholder="Inserisci la nuova password"
-              type="password"
-              variant="bordered"
-              value={passwordData.newPassword}
-              onValueChange={(value) =>
-                setPasswordData({ ...passwordData, newPassword: value })
-              }
-              startContent={
-                <Icon
-                  icon="solar:lock-password-bold"
-                  className="text-default-400"
-                />
-              }
-            />
-            <Input
-              label="Conferma Password"
-              placeholder="Conferma la nuova password"
-              type="password"
-              variant="bordered"
-              value={passwordData.confirmPassword}
-              onValueChange={(value) =>
-                setPasswordData({ ...passwordData, confirmPassword: value })
-              }
-              startContent={
-                <Icon
-                  icon="solar:lock-password-bold"
-                  className="text-default-400"
-                />
-              }
-            />
-            <Button
-              color="primary"
-              className="w-fit"
-              onPress={handleChangePassword}
-              isLoading={isChangingPassword}
-              startContent={
-                !isChangingPassword && <Icon icon="solar:key-bold" width={20} />
-              }
-            >
-              {isChangingPassword ? "Cambio in corso..." : "Cambia Password"}
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* Zona Pericolosa */}
-      <Card className="border-2 border-danger/50">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-danger/10">
-              <Icon
-                icon="solar:danger-triangle-outline"
-                className="text-danger text-xl"
-              />
-            </div>
-            <h3 className="text-lg font-semibold text-danger">
-              Zona Pericolosa
-            </h3>
-          </div>
-        </CardHeader>
-        <Divider />
-        <CardBody className="pt-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="font-medium">Logout</p>
-              <p className="text-small text-default-500">
-                Disconnetti il tuo account e torna alla schermata di login
-              </p>
-            </div>
-            <Button
-              color="danger"
-              variant="flat"
-              onPress={logout}
-              isLoading={isLoggingOut}
-              isDisabled={isLoggingOut}
-              startContent={
-                !isLoggingOut && <Icon icon="solar:logout-2-bold" width={20} />
-              }
-            >
-              {isLoggingOut ? "Disconnessione..." : "Logout"}
-            </Button>
-          </div>
-
-          <Divider />
-
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="font-medium">Elimina Account</p>
-              <p className="text-small text-default-500">
-                Elimina permanentemente il tuo account e tutti i dati associati.
-                Questa azione non può essere annullata.
-              </p>
-            </div>
-            <Button
-              color="danger"
-              variant="flat"
-              startContent={
-                <Icon icon="solar:trash-bin-trash-bold" width={20} />
-              }
-            >
-              Elimina Account
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
+        </Tab>
+      </Tabs>
     </div>
   );
 }
