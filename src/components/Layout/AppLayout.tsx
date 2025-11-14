@@ -64,15 +64,20 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
 
       setIsLoadingUser(true);
       try {
-        const response = await axios.get("/authentication/GET/get-session-data", {
-          withCredentials: true,
-        });
+        const response = await axios.get(
+          "/authentication/GET/get-session-data",
+          {
+            withCredentials: true,
+          }
+        );
 
         if (response.data && response.data.user) {
-          setUser(response.data.user);
+          const userData = response.data.user;
+          setUser(userData);
         } else if (response.data) {
           // Se i dati utente sono direttamente nella risposta
-          setUser(response.data);
+          const userData = response.data;
+          setUser(userData);
         }
       } catch (error) {
         console.error("Errore nel recupero dei dati utente:", error);
@@ -97,11 +102,69 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
     };
   }, []);
 
+  // Ascolta evento per aggiornare i dati utente (es. dopo upload immagine profilo)
+  useEffect(() => {
+    const handleUserUpdate = async () => {
+      if (!isAuth) return;
+
+      try {
+        const response = await axios.get(
+          "/authentication/GET/get-session-data",
+          {
+            withCredentials: true,
+          }
+        );
+
+        if (response.data && response.data.user) {
+          const userData = response.data.user;
+          setUser(userData);
+        } else if (response.data) {
+          const userData = response.data;
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error("Errore nell'aggiornamento dei dati utente:", error);
+      }
+    };
+
+    window.addEventListener("user-profile-updated", handleUserUpdate);
+    return () => {
+      window.removeEventListener("user-profile-updated", handleUserUpdate);
+    };
+  }, [isAuth]);
+
   // Genera le iniziali per l'avatar
   const getInitials = (name: string, surname: string) => {
     const firstInitial = name ? name.charAt(0).toUpperCase() : "";
     const lastInitial = surname ? surname.charAt(0).toUpperCase() : "";
     return firstInitial + lastInitial;
+  };
+
+  // Costruisce l'URL dell'immagine del profilo
+  const getProfileImageUrl = () => {
+    if (!user) return undefined;
+
+    const profileImageUrl = (user as any)?.profile_image_url;
+
+    // Se non c'è immagine profilo, ritorna undefined per mostrare le iniziali come placeholder
+    if (!profileImageUrl || profileImageUrl.trim() === "") {
+      return undefined;
+    }
+
+    // Se l'URL è assoluto (inizia con http:// o https://), usalo direttamente
+    if (
+      profileImageUrl.startsWith("http://") ||
+      profileImageUrl.startsWith("https://")
+    ) {
+      return profileImageUrl;
+    }
+
+    // Se è relativo, costruisci l'URL completo usando il baseURL
+    // Rimuovi /API/v1 o /API/V1 (case insensitive) dal baseURL
+    const baseURL = axios.defaults.baseURL?.replace(/\/API\/v1/i, "") || "";
+    return `${baseURL}${
+      profileImageUrl.startsWith("/") ? "" : "/"
+    }${profileImageUrl}`;
   };
 
   // Nome completo dell'utente
@@ -138,8 +201,10 @@ export default function AppLayout({ children, isAuth }: AppLayoutProps) {
             <Avatar
               isBordered
               size="sm"
-              src={user?.email ? `https://i.pravatar.cc/150?u=${user.email}` : undefined}
-              name={user ? getInitials(user.name || "", user.surname || "") : "U"}
+              src={getProfileImageUrl()}
+              name={
+                user ? getInitials(user.name || "", user.surname || "") : "U"
+              }
               showFallback
             />
             <div className="flex flex-col">
