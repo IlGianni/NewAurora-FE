@@ -388,7 +388,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-6">
+    <div className="w-full space-y-6 pb-6 px-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
