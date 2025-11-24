@@ -226,7 +226,7 @@ export default function ProjectDetail() {
             </div>
           }
         >
-          <ProjectFeatureFlags />
+          <ProjectFeatureFlags projectId={id || ""} />
         </Tab>
       </Tabs>
     </div>
