@@ -112,7 +112,9 @@ export interface Sprint {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  is_completed: boolean;
   project_id: number;
+  completed_at?: string;
   created_by_id: number;
   created_at: string;
   updated_at: string;
@@ -184,3 +186,28 @@ export interface Feature_Flag {
   feature_flag_group?: Feature_Flag_Group;
   feature_flag_rules: Feature_Flag_Rule[];
 }
+
+// Interfaccia per le entry del Vault
+export interface VaultEntry {
+  vault_id: number;
+  project_id: number;
+  key: string;
+  value: string;
+  is_sensitive: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Interfaccia per la cronologia del Vault
+export interface VaultHistory {
+  vault_history_id: number;
+  vault_id: number;
+  key: string;
+  value: string;
+  is_sensitive: boolean;
+  changed_at: string;
+  changed_by_id?: number;
+}
+
+// Tipo per il tipo di valore del Vault
+export type VaultValueType = "sensitive" | "normal";
