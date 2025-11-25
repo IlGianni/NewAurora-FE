@@ -18,6 +18,7 @@
     "@iconify/react": "^6.0.1",
     "@internationalized/date": "^3.9.0",
     "@react-aria/i18n": "^3.12.12",
+    "@spacedesign-aurora/react-library": "file:../../SpaceDesign-Aurora-SKDS/packages/react-library",
     "@tailwindcss/vite": "^4.1.12",
     "axios": "^1.11.0",
     "framer-motion": "^12.23.12",

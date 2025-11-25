@@ -120,3 +120,67 @@ export interface Sprint {
   created_by: User;
   tasks: Task[];
 }
+
+// Interfaccia per i gruppi di feature flag
+export interface Feature_Flag_Group {
+  feature_flag_group_id: number;
+  name: string;
+  description?: string;
+  project_id: number;
+  created_at: string;
+  updated_at: string;
+  created_by_id: number;
+  created_by: User;
+  project: Project;
+  feature_flags: Feature_Flag[];
+}
+
+// Interfaccia per i target delle feature flag
+export interface Feature_Flag_Target {
+  target_id: number;
+  name: string;
+  type: string;
+  operator: string;
+  value: string;
+  enabled: boolean;
+  feature_flag_id: number;
+  created_at: string;
+  updated_at: string;
+  created_by_id: number;
+  created_by: User;
+  feature_flag: Feature_Flag;
+}
+
+// Interfaccia per le regole delle feature flag
+export interface Feature_Flag_Rule {
+  feature_flag_rule_id: number;
+  field: string;
+  operator: string;
+  value: string;
+  feature_flag_id: number;
+  created_at: string;
+  updated_at: string;
+  created_by_id: number;
+  created_by: User;
+  feature_flag: Feature_Flag;
+}
+
+// Interfaccia per le feature flag
+export interface Feature_Flag {
+  feature_flag_id: number;
+  name: string;
+  key: string;
+  description?: string;
+  default_value: boolean;
+  project_id: number;
+  feature_flag_group_id?: number;
+  enabled: boolean;
+  targets: Feature_Flag_Target[];
+  created_at: string;
+  updated_at: string;
+  created_by_id: number;
+  created_by: User;
+  project: Project;
+  feature_flag_group?: Feature_Flag_Group;
+  feature_flag_rules: Feature_Flag_Rule[];
+}

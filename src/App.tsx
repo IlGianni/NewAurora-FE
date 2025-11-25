@@ -3,14 +3,17 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import Settings from "./pages/settings/Settings";
 import Projects from "./pages/projects/Projects";
 import ProjectDetail from "./pages/projects/ProjectDetail";
+import FeatureFlagEditor from "./components/Project/ProjectDetail/ProjectFeatureFlags/FeatureFlagEditor";
 import AppLayout from "./components/Layout/AppLayout";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import ProjectCreator from "./pages/projects/ProjectCreator";
+import { Spinner } from "@heroui/react";
 
 function App() {
   // Set the base URL for API calls
+
   axios.defaults.baseURL =
     import.meta.env.VITE_API_URL || "http://localhost:3000/API/v1";
   axios.defaults.withCredentials = true;
@@ -53,7 +56,11 @@ function App() {
   }, []);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spinner variant="wave" />
+      </div>
+    );
   }
 
   return (
@@ -73,6 +80,14 @@ function App() {
             <Route path="/projects/:id" element={<ProjectDetail />} />
             <Route path="/projects/create" element={<ProjectCreator />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route
+              path="/projects/:id/feature-flags/:flagKey"
+              element={<FeatureFlagEditor />}
+            />
+            <Route
+              path="/projects/:id/feature-flags/new-flag/:groupId"
+              element={<FeatureFlagEditor />}
+            />
           </>
         )}
       </Routes>
