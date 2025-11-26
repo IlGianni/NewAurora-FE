@@ -5,7 +5,7 @@ import App from "./App.tsx";
 import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "./contexts";
-import { AuroraProvider } from "@spacedesign-aurora/react-library";
+import { AuroraProvider } from "@spacedesignitalia/react-library";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

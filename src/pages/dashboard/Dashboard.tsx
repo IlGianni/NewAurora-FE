@@ -1,27 +1,50 @@
-import React, { useState, useEffect } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Progress,
-  Skeleton,
-} from "@heroui/react";
+import { useState, useEffect } from "react";
+import { Chip, Skeleton, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import type { User, Project } from "../../types";
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  // Simula il caricamento dei dati
+  // Dati utente e dashboard
+  const [user, setUser] = useState<User | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Carica dati utente e dashboard
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    const fetchDashboardData = async () => {
+      setIsLoadingData(true);
+      try {
+        // Carica dati utente
+        const userResponse = await axios.get(
+          "/authentication/GET/get-session-data",
+          { withCredentials: true }
+        );
+        if (userResponse.data?.user) {
+          setUser(userResponse.data.user);
+        } else if (userResponse.data) {
+          setUser(userResponse.data);
+        }
 
-    return () => clearTimeout(timer);
+        // Carica progetti
+        const projectsResponse = await axios.get("/project/GET/get-projects");
+        if (projectsResponse.data?.projects) {
+          setProjects(projectsResponse.data.projects);
+        }
+      } catch (error) {
+        console.error("Errore nel caricamento dei dati dashboard:", error);
+      } finally {
+        setIsLoadingData(false);
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
   // Gestisci callback OAuth GitHub
@@ -31,23 +54,15 @@ export default function Dashboard() {
     const error = searchParams.get("error");
 
     if (oauth === "success" && provider === "github") {
-      // Login GitHub completato con successo
       console.log("✅ Login GitHub OAuth completato");
-
-      // Verifica stato GitHub per vault
       checkGitHubAuthStatus();
-
-      // Pulisci i parametri dalla URL
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete("oauth");
       newSearchParams.delete("provider");
       setSearchParams(newSearchParams, { replace: true });
     } else if (error) {
-      // Gestisci errore OAuth
       const message = searchParams.get("message");
       console.error("❌ Errore OAuth:", error, message);
-
-      // Pulisci i parametri dalla URL
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete("error");
       newSearchParams.delete("message");
@@ -64,7 +79,6 @@ export default function Dashboard() {
 
       if (response.data.authenticated) {
         console.log("✅ GitHub collegato per vault:", response.data.user);
-        // Dispatch evento per notificare componenti interessati
         window.dispatchEvent(
           new CustomEvent("github-vault-connected", {
             detail: response.data,
@@ -78,280 +92,105 @@ export default function Dashboard() {
     }
   };
 
+  // Calcola statistiche
+  const activeProjects = projects.filter(
+    (p) => p.project_status.name !== "Completed"
+  ).length;
+
+  const totalProjects = projects.length;
+  const completedProjects = projects.filter(
+    (p) => p.project_status.name === "Completed"
+  ).length;
+
+  // Progetti recenti (ultimi 5)
+  const recentProjects = [...projects]
+    .sort(
+      (a, b) =>
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    )
+    .slice(0, 5);
+
+  // Saluto personalizzato
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Buongiorno";
+    if (hour < 18) return "Buon pomeriggio";
+    return "Buonasera";
+  };
+
+  const getUserName = () => {
+    if (!user) return "Utente";
+    return user.name || "Utente";
+  };
+
+  // Formatta data relativa
+  const formatRelativeDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Oggi";
+    if (diffDays === 1) return "Ieri";
+    if (diffDays < 7) return `${diffDays} giorni fa`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} settimane fa`;
+    return date.toLocaleDateString("it-IT", {
+      day: "numeric",
+      month: "short",
+    });
+  };
+
+  if (isLoading || isLoadingData) {
+    return (
+      <div className="space-y-6 p-6 md:p-8 mx-auto max-w-7xl">
+        {/* Header skeleton */}
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div className="space-y-2">
+            <Skeleton className="h-12 w-64 rounded" />
+            <Skeleton className="h-5 w-80 rounded" />
+          </div>
+          <Skeleton className="h-10 w-40 rounded" />
+        </div>
+
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-lg" />
+          ))}
+        </div>
+
+        {/* Projects skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-48 rounded mb-4" />
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Progetti attivi (non completati) per la sezione "Azioni Importanti"
+  const activeProjectsList = projects
+    .filter((p) => p.project_status.name !== "Completed")
+    .sort(
+      (a, b) =>
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    )
+    .slice(0, 3);
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      {isLoading ? (
+    <div className="space-y-6 p-6 md:p-8 mx-auto">
+      {/* Header con saluto */}
+      <div className="flex items-start justify-between gap-4 mb-8">
         <div>
-          <Skeleton className="h-9 w-48 rounded mb-2" />
-          <Skeleton className="h-4 w-64 rounded" />
+          <h1 className="text-xl md:text-3xl mb-2">
+            {getGreeting()}, {getUserName()} 👋
+          </h1>
         </div>
-      ) : (
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-default-500 mt-2">
-            Benvenuto nel tuo Project Manager
-          </p>
-        </div>
-      )}
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {isLoading ? (
-          // Mostra skeleton durante il caricamento
-          Array.from({ length: 4 }).map((_, index) => (
-            <Card key={index}>
-              <CardBody className="flex flex-row items-center gap-4">
-                <Skeleton className="flex rounded-lg w-12 h-12" />
-                <div>
-                  <Skeleton className="h-4 w-20 rounded mb-2" />
-                  <Skeleton className="h-8 w-8 rounded" />
-                </div>
-              </CardBody>
-            </Card>
-          ))
-        ) : (
-          <>
-            <Card>
-              <CardBody className="flex flex-row items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <Icon
-                    icon="solar:widget-2-outline"
-                    className="text-primary text-2xl"
-                  />
-                </div>
-                <div>
-                  <p className="text-small text-default-500">Progetti Attivi</p>
-                  <p className="text-2xl font-bold">12</p>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody className="flex flex-row items-center gap-4">
-                <div className="p-3 bg-success/10 rounded-lg">
-                  <Icon
-                    icon="solar:checklist-minimalistic-outline"
-                    className="text-success text-2xl"
-                  />
-                </div>
-                <div>
-                  <p className="text-small text-default-500">Task Completate</p>
-                  <p className="text-2xl font-bold">48</p>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody className="flex flex-row items-center gap-4">
-                <div className="p-3 bg-warning/10 rounded-lg">
-                  <Icon
-                    icon="solar:users-group-two-rounded-outline"
-                    className="text-warning text-2xl"
-                  />
-                </div>
-                <div>
-                  <p className="text-small text-default-500">Team Members</p>
-                  <p className="text-2xl font-bold">8</p>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody className="flex flex-row items-center gap-4">
-                <div className="p-3 bg-secondary/10 rounded-lg">
-                  <Icon
-                    icon="solar:calendar-outline"
-                    className="text-secondary text-2xl"
-                  />
-                </div>
-                <div>
-                  <p className="text-small text-default-500">Eventi Oggi</p>
-                  <p className="text-2xl font-bold">5</p>
-                </div>
-              </CardBody>
-            </Card>
-          </>
-        )}
       </div>
-
-      {/* Recent Projects */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {isLoading ? (
-          // Mostra skeleton durante il caricamento
-          Array.from({ length: 2 }).map((_, index) => (
-            <Card key={index}>
-              <CardHeader>
-                <Skeleton className="h-6 w-32 rounded" />
-              </CardHeader>
-              <CardBody className="space-y-4">
-                {Array.from({ length: 3 }).map((_, itemIndex) => (
-                  <div key={itemIndex} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-24 rounded" />
-                      <Skeleton className="flex rounded-full w-16 h-6" />
-                    </div>
-                    <Skeleton className="h-2 w-full rounded" />
-                  </div>
-                ))}
-              </CardBody>
-            </Card>
-          ))
-        ) : (
-          <>
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold">Progetti Recenti</h3>
-              </CardHeader>
-              <CardBody className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">E-commerce Platform</p>
-                    <p className="text-small text-default-500">
-                      Scadenza: 15 Gennaio
-                    </p>
-                  </div>
-                  <Chip color="primary" size="sm">
-                    In Corso
-                  </Chip>
-                </div>
-                <Progress value={75} className="w-full" />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Mobile App</p>
-                    <p className="text-small text-default-500">
-                      Scadenza: 20 Gennaio
-                    </p>
-                  </div>
-                  <Chip color="success" size="sm">
-                    Completato
-                  </Chip>
-                </div>
-                <Progress value={100} className="w-full" />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Website Redesign</p>
-                    <p className="text-small text-default-500">
-                      Scadenza: 25 Gennaio
-                    </p>
-                  </div>
-                  <Chip color="warning" size="sm">
-                    In Ritardo
-                  </Chip>
-                </div>
-                <Progress value={45} className="w-full" />
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold">Task Urgenti</h3>
-              </CardHeader>
-              <CardBody className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Icon
-                    icon="solar:clock-circle-outline"
-                    className="text-danger text-xl"
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium">Fix Bug Login</p>
-                    <p className="text-small text-default-500">Priorità Alta</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Icon
-                    icon="solar:document-outline"
-                    className="text-warning text-xl"
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium">Aggiorna Documentazione</p>
-                    <p className="text-small text-default-500">
-                      Priorità Media
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Icon
-                    icon="solar:settings-outline"
-                    className="text-primary text-xl"
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium">Configurazione Server</p>
-                    <p className="text-small text-default-500">Priorità Alta</p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </>
-        )}
-      </div>
-
-      {/* Quick Actions */}
-      {isLoading ? (
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32 rounded" />
-          </CardHeader>
-          <CardBody>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col items-center gap-2 p-4 border border-divider rounded-lg"
-                >
-                  <Skeleton className="flex rounded w-12 h-12" />
-                  <Skeleton className="h-4 w-20 rounded" />
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold">Azioni Rapide</h3>
-          </CardHeader>
-          <CardBody>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex flex-col items-center gap-2 p-4 border border-divider rounded-lg hover:bg-default-50 cursor-pointer transition-colors">
-                <Icon
-                  icon="solar:add-circle-outline"
-                  className="text-primary text-3xl"
-                />
-                <p className="text-small font-medium">Nuovo Progetto</p>
-              </div>
-
-              <div className="flex flex-col items-center gap-2 p-4 border border-divider rounded-lg hover:bg-default-50 cursor-pointer transition-colors">
-                <Icon
-                  icon="solar:checklist-outline"
-                  className="text-success text-3xl"
-                />
-                <p className="text-small font-medium">Nuova Task</p>
-              </div>
-
-              <div className="flex flex-col items-center gap-2 p-4 border border-divider rounded-lg hover:bg-default-50 cursor-pointer transition-colors">
-                <Icon
-                  icon="solar:user-plus-outline"
-                  className="text-warning text-3xl"
-                />
-                <p className="text-small font-medium">Aggiungi Team</p>
-              </div>
-
-              <div className="flex flex-col items-center gap-2 p-4 border border-divider rounded-lg hover:bg-default-50 cursor-pointer transition-colors">
-                <Icon
-                  icon="solar:calendar-add-outline"
-                  className="text-secondary text-3xl"
-                />
-                <p className="text-small font-medium">Nuovo Evento</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      )}
     </div>
   );
 }
